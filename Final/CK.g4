@@ -7,22 +7,11 @@ grammar CK;
     import intermediate.type.Typespec;
 }
 
-program           : programHeader '{' compoundStatement '}' ;
-programHeader     : P programIdentifier '[' programParameters ']';
+program           : programHeader compoundStatement ;
+programHeader     : PROGRAM programIdentifier '[' programParameters ']';
 programParameters : IDENTIFIER ( ',' IDENTIFIER )* ;
 
 programIdentifier   locals [ SymtabEntry entry = null ]
-    : IDENTIFIER ;
-
-variableDeclaration : typeIdentifier variableIdentifier;
-typeIdentifier : IDENTIFIER;
-variableIdentifier locals [ Typespec type = null, SymtabEntry entry = null ] : IDENTIFIER;
-variableAssignment : IDENTIFIER '=' expression;
-
-parameters                : '[' parameterDeclarationsList ']' ;
-parameterDeclarationsList : typeIdentifier parameterIdentifier ( ',' typeIdentifier parameterIdentifier )* ;
-
-parameterIdentifier   locals [ Typespec type = null, SymtabEntry entry = null ]
     : IDENTIFIER ;
 
 statement : compoundStatement
@@ -31,10 +20,22 @@ statement : compoundStatement
           | whileStatement
           | printStatement
           | functionCallStatement
+          | variableDeclarationStatement
+          | shiftCypherStatement
+          | polyCypherStatement
+          | stringAnalysisStatement
           | emptyStatement
           ;
 
-compoundStatement : '[' statementList ']' ;
+shiftCypherStatement : variable shiftOp INTEGER ;
+polyCypherStatement : variable polyOp STRING ;
+stringAnalysisStatement : variable '@';
+
+variableDeclarationStatement : typeIdentifier variableIdentifier;
+typeIdentifier : IDENTIFIER;
+variableIdentifier locals [ Typespec type = null, SymtabEntry entry = null ] : IDENTIFIER;
+
+compoundStatement : '{' statementList '}' ;
 emptyStatement : ;
      
 statementList       : statement ( ';' statement )* ;
@@ -93,9 +94,11 @@ doubleConstant    : DOUBLE;
 characterConstant : CHARACTER ;
 stringConstant    : STRING ;
        
-relOp : '=' | '<>' | '<' | '<=' | '>' | '>=' ;
+relOp : '==' | '!=' | '<' | '<=' | '>' | '>=' ;
 addOp : '+' | '-' | OR ;
 mulOp : '*' | '/' | DIV | MOD | AND ;
+shiftOp : '>>' ;
+polyOp : '<<' ;
 
 fragment A : ('a' | 'A') ;
 fragment B : ('b' | 'B') ;
@@ -124,15 +127,8 @@ fragment X : ('x' | 'X') ;
 fragment Y : ('y' | 'Y') ;
 fragment Z : ('z' | 'Z') ;
 
-PROGRAM   : P R O G R A M ;
+PROGRAM   : P ;
 CONST     : C O N S T ;
-TYPE      : T Y P E ;
-ARRAY     : A R R A Y ;
-OF        : O F ;
-RECORD    : R E C O R D ;
-VAR       : V A R ;
-BEGIN     : B E G I N ;
-END       : E N D ;
 DIV       : D I V ;
 MOD       : M O D ;
 AND       : A N D ;
@@ -143,7 +139,6 @@ THEN      : T H E N ;
 ELSE      : E L S E ;
 WHILE     : W H I L E ;
 PRINT     : P R I N T ;
-PROCEDURE : P R O C E D U R E ;
 FUNCTION  : F U N C T I O N ;
 
 IDENTIFIER : [a-zA-Z][a-zA-Z0-9]* ;
