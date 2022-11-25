@@ -19,17 +19,11 @@ statement : compoundStatement
           | ifStatement
           | whileStatement
           | printStatement
+          | functionDefinitionStatement
           | functionCallStatement
           | variableDeclarationStatement
-          | shiftCypherStatement
-          | polyCypherStatement
-          | stringAnalysisStatement
           | emptyStatement
           ;
-
-shiftCypherStatement : variable shiftOp INTEGER ;
-polyCypherStatement : variable polyOp STRING ;
-stringAnalysisStatement : variable '@';
 
 variableDeclarationStatement : typeIdentifier variableIdentifier;
 typeIdentifier : IDENTIFIER;
@@ -45,11 +39,11 @@ lhs locals [ Typespec type = null ]
     : variable ;
 rhs : expression ;
 
-ifStatement    : IF expression THEN trueStatement ( ELSE falseStatement )? ;
+ifStatement    : IF expression trueStatement ( ELSE falseStatement )? ;
 trueStatement  : statement ;
 falseStatement : statement ;
 
-whileStatement  : WHILE expression '[' statement ']' ;
+whileStatement  : WHILE expression statement ;
 
 functionCallStatement : functionCall ;
 
@@ -59,7 +53,10 @@ argument     : expression ;
 printStatement   : PRINT '[' expression ']' ;
 
 expression          locals [ Typespec type = null ] 
-    : simpleExpression (relOp simpleExpression)? ;
+    : relationExpression (cypherOp relationExpression)? ;
+
+relationExpression        locals [ Typespec type = null ]
+    : simpleExpression (relOp simpleExpression)* ;
 
 sign : '-' | '+' ;
     
@@ -76,12 +73,16 @@ factor              locals [ Typespec type = null ]
     | stringConstant       # stringFactor
     | functionCall         # functionCallFactor
     | NOT factor           # notFactor
-    | '(' expression ')'   # parenthesizedFactor
+    | '[' expression ']'   # bracketedFactor
+    | variable '@'         # stringAnalysis
     ;
 
 variable            locals [ Typespec type = null, SymtabEntry entry = null ] 
     : variableIdentifier ;
 
+functionDefinitionStatement     locals [ Typespec type = null, SymtabEntry entry = null ]
+    : FUNCTION typeIdentifier functionName '[' defArgumentList? ']' statement ;
+defArgumentList : typeIdentifier variable (',' typeIdentifier variable)* ;
 functionCall : functionName '[' argumentList? ']' ;
 functionName        locals [ Typespec type = null, SymtabEntry entry = null ] 
     : IDENTIFIER ;
@@ -97,8 +98,7 @@ stringConstant    : STRING ;
 relOp : '==' | '!=' | '<' | '<=' | '>' | '>=' ;
 addOp : '+' | '-' | OR ;
 mulOp : '*' | '/' | DIV | MOD | AND ;
-shiftOp : '>>' ;
-polyOp : '<<' ;
+cypherOp : '>>' | '<<' ;
 
 fragment A : ('a' | 'A') ;
 fragment B : ('b' | 'B') ;
@@ -139,7 +139,7 @@ THEN      : T H E N ;
 ELSE      : E L S E ;
 WHILE     : W H I L E ;
 PRINT     : P R I N T ;
-FUNCTION  : F U N C T I O N ;
+FUNCTION  : F ;
 
 IDENTIFIER : [a-zA-Z][a-zA-Z0-9]* ;
 INTEGER    : [0-9]+ ;
