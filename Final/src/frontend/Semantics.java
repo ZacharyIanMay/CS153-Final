@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import antlr4.*;
+import antlr4CK.*;
 
 import intermediate.symtab.*;
 import intermediate.symtab.SymtabEntry.Kind;
@@ -58,11 +59,10 @@ public class Semantics extends PascalBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitProgram(PascalParser.ProgramContext ctx) 
+    public Object visitProgram(CKParser.ProgramContext ctx) 
     { 
         visit(ctx.programHeader());
-        visit(ctx.block().declarations());
-        visit(ctx.block().compoundStatement());
+        visit(ctx.compoundStatement());
         
         // Print the cross-reference table.
         CrossReferencer crossReferencer = new CrossReferencer();
@@ -72,9 +72,9 @@ public class Semantics extends PascalBaseVisitor<Object>
     }
     
     @Override 
-    public Object visitProgramHeader(PascalParser.ProgramHeaderContext ctx) 
+    public Object visitProgramHeader(CKParser.ProgramHeaderContext ctx) 
     { 
-        PascalParser.ProgramIdentifierContext idCtx = ctx.programIdentifier();
+        CKParser.ProgramIdentifierContext idCtx = ctx.programIdentifier();
         String programName = idCtx.IDENTIFIER().getText();  // don't shift case
         
         programId = symtabStack.enterLocal(programName, PROGRAM);
