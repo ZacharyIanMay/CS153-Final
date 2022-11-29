@@ -96,181 +96,13 @@ public class Semantics extends CKBaseVisitor<Object>
         
         return null;
     }
-
-    @Override 
-    @SuppressWarnings("unchecked")
-    public Object visitRoutineDefinition(
-                                    PascalParser.RoutineDefinitionContext ctx) 
-    {
-        PascalParser.FunctionHeadContext  funcCtx = ctx.functionHead();
-        PascalParser.ProcedureHeadContext procCtx = ctx.procedureHead();
-        PascalParser.RoutineIdentifierContext idCtx = null;
-        PascalParser.ParametersContext parameters = null;
-        boolean functionDefinition = funcCtx != null;
-        Typespec returnType = null;
-        String routineName;
-        
-        if (functionDefinition)
-        {
-            idCtx = funcCtx.routineIdentifier();
-            parameters = funcCtx.parameters();
-        }
-        else
-        {
-            idCtx = procCtx.routineIdentifier();
-            parameters = procCtx.parameters();
-        }
-        
-        routineName = idCtx.IDENTIFIER().getText().toLowerCase();
-        SymtabEntry routineId = symtabStack.lookupLocal(routineName);
-        
-        if (routineId != null)
-        {
-            error.flag(REDECLARED_IDENTIFIER, 
-                       ctx.getStart().getLine(), routineName);
-            return null;
-        }
-
-        routineId = symtabStack.enterLocal(
-                        routineName, functionDefinition ? FUNCTION : PROCEDURE);
-        routineId.setRoutineCode(DECLARED);
-        idCtx.entry = routineId;
-        
-        // Append to the parent routine's list of subroutines.
-        SymtabEntry parentId = symtabStack.getLocalSymtab().getOwner();
-        parentId.appendSubroutine(routineId);
-        
-        routineId.setRoutineSymtab(symtabStack.push());
-        idCtx.entry = routineId;
-        
-        Symtab symtab = symtabStack.getLocalSymtab();
-        symtab.setOwner(routineId);
-        
-        if (parameters != null)
-        {
-            ArrayList<SymtabEntry> parameterIds = (ArrayList<SymtabEntry>) 
-                                visit(parameters.parameterDeclarationsList());
-            routineId.setRoutineParameters(parameterIds);
-            
-            for (SymtabEntry parmId : parameterIds)
-            {
-                parmId.setSlotNumber(symtab.nextSlotNumber());
-            }
-        }
-        
-        if (functionDefinition)
-        {
-            PascalParser.TypeIdentifierContext typeIdCtx = 
-                                                    funcCtx.typeIdentifier();
-            visit(typeIdCtx);
-            returnType = typeIdCtx.type;
-            
-            if (returnType.getForm() != SCALAR)
-            {
-                error.flag(INVALID_RETURN_TYPE, typeIdCtx);
-                returnType = Predefined.integerType;
-            }
-            
-            routineId.setType(returnType);
-            idCtx.type = returnType;
-        }
-        else
-        {
-            idCtx.type = null;
-        }
-        
-        visit(ctx.block().declarations());     
-        
-        // Enter the function's associated variable into its symbol table.
-        if (functionDefinition)
-        {
-            SymtabEntry assocVarId = 
-                                symtabStack.enterLocal(routineName, VARIABLE);
-            assocVarId.setSlotNumber(symtab.nextSlotNumber());
-            assocVarId.setType(returnType);
-        }
-        
-        visit(ctx.block().compoundStatement());
-        routineId.setExecutable(ctx.block().compoundStatement());
-        
-        symtabStack.pop();
-        return null;
-    }
-
-    @Override 
-    @SuppressWarnings("unchecked")
-    public Object visitParameterDeclarationsList(
-                            PascalParser.ParameterDeclarationsListContext ctx)
-    {
-        ArrayList<SymtabEntry> parameterList = new ArrayList<>();
-        
-        // Loop over the parameter declarations.
-        for (PascalParser.ParameterDeclarationsContext dclCtx : 
-                                                    ctx.parameterDeclarations())
-        {
-            ArrayList<SymtabEntry> parameterSublist = 
-                                        (ArrayList<SymtabEntry>) visit(dclCtx);
-            parameterList.addAll(parameterSublist);
-        }
-        
-        return parameterList;
-    }
-
-    @Override 
-    public Object visitParameterDeclarations(
-                                PascalParser.ParameterDeclarationsContext ctx) 
-    {
-        Kind kind = ctx.VAR() != null ? REFERENCE_PARAMETER : VALUE_PARAMETER; 
-        PascalParser.TypeIdentifierContext typeCtx = ctx.typeIdentifier();
-        
-        visit(typeCtx);
-        Typespec parmType = typeCtx.type;
-        
-        ArrayList<SymtabEntry> parameterSublist = new ArrayList<>();
-        
-        // Loop over the parameter identifiers.
-        PascalParser.ParameterIdentifierListContext parmListCtx = 
-                                                ctx.parameterIdentifierList();
-        for (PascalParser.ParameterIdentifierContext parmIdCtx : 
-                                            parmListCtx.parameterIdentifier())
-        {
-            int lineNumber = parmIdCtx.getStart().getLine();   
-            String parmName = parmIdCtx.IDENTIFIER().getText().toLowerCase();
-            SymtabEntry parmId = symtabStack.lookupLocal(parmName);
-            
-            if (parmId == null)
-            {
-                parmId = symtabStack.enterLocal(parmName, kind);
-                parmId.setType(parmType);
-                
-                if (   (kind == REFERENCE_PARAMETER) 
-                    && (mode != EXECUTOR)
-                    && (parmType.getForm() == SCALAR))
-                {
-                    error.flag(INVALID_REFERENCE_PARAMETER, parmIdCtx);
-                }
-            }
-            else
-            {
-                error.flag(REDECLARED_IDENTIFIER, parmIdCtx);
-            }
-            
-            parmIdCtx.entry = parmId;
-            parmIdCtx.type  = parmType;
-            
-            parameterSublist.add(parmId);
-            parmId.appendLineNumber(lineNumber);    
-        }
-        
-        return parameterSublist;
-    }
     
     @Override 
     public Object visitAssignmentStatement(
-                                    PascalParser.AssignmentStatementContext ctx) 
+                                    CKParser.AssignmentStatementContext ctx) 
     {
-        PascalParser.LhsContext lhsCtx = ctx.lhs();
-        PascalParser.RhsContext rhsCtx = ctx.rhs();
+        CKParser.LhsContext lhsCtx = ctx.lhs();
+        CKParser.RhsContext rhsCtx = ctx.rhs();
         
         visitChildren(ctx);
         
@@ -286,9 +118,9 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitLhs(PascalParser.LhsContext ctx) 
+    public Object visitLhs(CKParser.LhsContext ctx) 
     {
-        PascalParser.VariableContext varCtx = ctx.variable();
+        CKParser.VariableContext varCtx = ctx.variable();
         visit(varCtx);
         ctx.type = varCtx.type;
         
@@ -296,11 +128,11 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitIfStatement(PascalParser.IfStatementContext ctx) 
+    public Object visitIfStatement(CKParser.IfStatementContext ctx) 
     {
-        PascalParser.ExpressionContext     exprCtx  = ctx.expression();
-        PascalParser.TrueStatementContext  trueCtx  = ctx.trueStatement();
-        PascalParser.FalseStatementContext falseCtx = ctx.falseStatement();
+        CKParser.ExpressionContext     exprCtx  = ctx.expression();
+        CKParser.TrueStatementContext  trueCtx  = ctx.trueStatement();
+        CKParser.FalseStatementContext falseCtx = ctx.falseStatement();
         
         visit(exprCtx);
         Typespec exprType = exprCtx.type;
@@ -317,82 +149,9 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitCaseStatement(PascalParser.CaseStatementContext ctx) 
+    public Object visitWhileStatement(CKParser.WhileStatementContext ctx) 
     {
-        PascalParser.ExpressionContext exprCtx = ctx.expression();
-        visit(exprCtx);
-        Typespec exprType = exprCtx.type;
-        Form exprTypeForm = exprType.getForm();
-        
-        if (   (   (exprTypeForm != SCALAR) 
-                && (exprTypeForm != ENUMERATION) 
-                && (exprTypeForm != SUBRANGE))
-            || (exprType == Predefined.realType)
-            || (exprType == Predefined.stringType))
-        {
-            error.flag(TYPE_MISMATCH, exprCtx);
-            exprType = Predefined.integerType;
-        }
-        
-        HashSet<Integer> constants = new HashSet<>();
-        PascalParser.CaseBranchListContext branchListCtx = ctx.caseBranchList();
-        
-        // Loop over the CASE branches.
-        for (PascalParser.CaseBranchContext branchCtx : 
-                                                    branchListCtx.caseBranch())
-        {
-            PascalParser.CaseConstantListContext constListCtx = 
-                                                    branchCtx.caseConstantList();
-            PascalParser.StatementContext stmtCtx = branchCtx.statement();
-            
-            if (constListCtx != null)
-            {
-                // Loop over the CASE constants in each branch.
-                for (PascalParser.CaseConstantContext caseConstCtx : 
-                                                    constListCtx.caseConstant())
-                {
-                    PascalParser.ConstantContext constCtx = 
-                                                        caseConstCtx.constant();
-                    Object constValue = visit(constCtx);
-                    
-                    caseConstCtx.type  = constCtx.type;
-                    caseConstCtx.value = 0;
-                    
-                    if (constCtx.type != exprType)
-                    {
-                        error.flag(TYPE_MISMATCH, constCtx);
-                    }
-                    else if (   (constCtx.type == Predefined.integerType)
-                             || (constCtx.type.getForm() == ENUMERATION))
-                    {
-                        caseConstCtx.value = (Integer) constValue;
-                    }
-                    else if (constCtx.type == Predefined.charType)
-                    {
-                        caseConstCtx.value = (Character) constValue;
-                    }
-                    
-                    if (constants.contains(caseConstCtx.value))
-                    {
-                        error.flag(DUPLICATE_CASE_CONSTANT, constCtx);
-                    }
-                    else
-                    {
-                        constants.add(caseConstCtx.value);
-                    }
-                }
-            }
-            
-            if (stmtCtx != null) visit(stmtCtx);
-        }
-        
-        return null;
-    }
-
-    @Override 
-    public Object visitRepeatStatement(PascalParser.RepeatStatementContext ctx) 
-    {
-        PascalParser.ExpressionContext exprCtx = ctx.expression();
+        CKParser.ExpressionContext exprCtx = ctx.expression();
         visit(exprCtx);
         Typespec exprType = exprCtx.type;
         
@@ -400,62 +159,6 @@ public class Semantics extends CKBaseVisitor<Object>
         {
             error.flag(TYPE_MUST_BE_BOOLEAN, exprCtx);
         }
-        
-        visit(ctx.statementList());
-        return null;
-    }
-
-    @Override 
-    public Object visitWhileStatement(PascalParser.WhileStatementContext ctx) 
-    {
-        PascalParser.ExpressionContext exprCtx = ctx.expression();
-        visit(exprCtx);
-        Typespec exprType = exprCtx.type;
-        
-        if (!TypeChecker.isBoolean(exprType))
-        {
-            error.flag(TYPE_MUST_BE_BOOLEAN, exprCtx);
-        }
-        
-        visit(ctx.statement());
-        return null;
-    }
-
-    @Override 
-    public Object visitForStatement(PascalParser.ForStatementContext ctx) 
-    {
-        PascalParser.VariableContext varCtx = ctx.variable();
-        visit(varCtx);
-        
-        String controlName = varCtx.variableIdentifier().getText().toLowerCase();
-        Typespec controlType = Predefined.integerType;
-        
-        if (varCtx.entry != null)
-        {
-            controlType = varCtx.type;
-            
-            if (   (controlType.getForm() != SCALAR )
-                || (controlType == Predefined.realType)
-                || (controlType == Predefined.stringType)
-                || (varCtx.modifier().size() != 0))
-            {
-                error.flag(INVALID_CONTROL_VARIABLE, varCtx);
-            }
-        }
-        else
-        {
-            error.flag(UNDECLARED_IDENTIFIER, ctx.getStart().getLine(), 
-                       controlName);
-        }
-        
-        PascalParser.ExpressionContext startCtx = ctx.expression().get(0);
-        PascalParser.ExpressionContext endCtx   = ctx.expression().get(1);
-        
-        visit(startCtx);
-        visit(endCtx);
-        
-        if (startCtx.type != controlType) error.flag(TYPE_MISMATCH, startCtx);
-        if (startCtx.type != endCtx.type) error.flag(TYPE_MISMATCH, endCtx);
         
         visit(ctx.statement());
         return null;
