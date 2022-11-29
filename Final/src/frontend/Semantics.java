@@ -22,7 +22,7 @@ import static intermediate.util.BackendMode.*;
  * Semantic operations.
  * Perform type checking and create symbol tables.
  */
-public class Semantics extends PascalBaseVisitor<Object>
+public class Semantics extends CKBaseVisitor<Object>
 {
     private BackendMode mode;
     private SymtabStack symtabStack;
