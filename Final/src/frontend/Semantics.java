@@ -165,53 +165,12 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitProcedureCallStatement(
-                                PascalParser.ProcedureCallStatementContext ctx) 
-    {
-        PascalParser.ProcedureNameContext nameCtx = ctx.procedureName();
-        PascalParser.ArgumentListContext listCtx = ctx.argumentList();
-        String name = ctx.procedureName().getText().toLowerCase();
-        SymtabEntry procedureId = symtabStack.lookup(name);
-        boolean badName = false;
-        
-        if (procedureId == null)
-        {
-            error.flag(UNDECLARED_IDENTIFIER, nameCtx);
-            badName = true;
-        }
-        else if (procedureId.getKind() != PROCEDURE)
-        {
-            error.flag(NAME_MUST_BE_PROCEDURE, nameCtx);
-            badName = true;
-        }
-        
-        // Bad procedure name. Do a simple arguments check and then leave.
-        if (badName)
-        {
-            for (PascalParser.ArgumentContext exprCtx : listCtx.argument())
-            {
-                visit(exprCtx);
-            }
-        }
-        
-        // Good procedure name.
-        else
-        {
-            ArrayList<SymtabEntry> parms = procedureId.getRoutineParameters();
-            checkCallArguments(listCtx, parms);
-        }
-        
-        nameCtx.entry = procedureId;
-        return null;
-    }
-
-    @Override 
     public Object visitFunctionCallFactor(
-                                    PascalParser.FunctionCallFactorContext ctx) 
+                                    CKParser.FunctionCallFactorContext ctx) 
     {
-        PascalParser.FunctionCallContext callCtx = ctx.functionCall();
-        PascalParser.FunctionNameContext nameCtx = callCtx.functionName();
-        PascalParser.ArgumentListContext listCtx = callCtx.argumentList();
+        CKParser.FunctionCallContext callCtx = ctx.functionCall();
+        CKParser.FunctionNameContext nameCtx = callCtx.functionName();
+        CKParser.ArgumentListContext listCtx = callCtx.argumentList();
         String name = callCtx.functionName().getText().toLowerCase();
         SymtabEntry functionId = symtabStack.lookup(name);
         boolean badName = false;
@@ -232,7 +191,7 @@ public class Semantics extends CKBaseVisitor<Object>
         // Bad function name. Do a simple arguments check and then leave.
         if (badName)
         {
-            for (PascalParser.ArgumentContext exprCtx : listCtx.argument())
+            for (CKParser.ArgumentContext exprCtx : listCtx.argument())
             {
                 visit(exprCtx);
             }
@@ -257,7 +216,7 @@ public class Semantics extends CKBaseVisitor<Object>
      * @param listCtx the ArgumentListContext.
      * @param parameters the arraylist of parameters to fill.
      */
-    private void checkCallArguments(PascalParser.ArgumentListContext listCtx,
+    private void checkCallArguments(CKParser.ArgumentListContext listCtx,
                                     ArrayList<SymtabEntry> parameters)
     {
         int parmsCount = parameters.size();
@@ -272,8 +231,8 @@ public class Semantics extends CKBaseVisitor<Object>
         // Check each argument against the corresponding parameter.
         for (int i = 0; i < parmsCount; i++)
         {
-            PascalParser.ArgumentContext argCtx = listCtx.argument().get(i);
-            PascalParser.ExpressionContext exprCtx = argCtx.expression();
+            CKParser.ArgumentContext argCtx = listCtx.argument().get(i);
+            CKParser.ExpressionContext exprCtx = argCtx.expression();
             visit(exprCtx);
             
             SymtabEntry parmId = parameters.get(i);
@@ -311,23 +270,23 @@ public class Semantics extends CKBaseVisitor<Object>
      * @param exprCtx the ExpressionContext.
      * @return true if it's an expression only, else false.
      */
-    private boolean expressionIsVariable(PascalParser.ExpressionContext exprCtx)
+    private boolean expressionIsVariable(CKParser.ExpressionContext exprCtx)
     {
         // Only a single simple expression?
         if (exprCtx.simpleExpression().size() == 1)
         {
-            PascalParser.SimpleExpressionContext simpleCtx = 
+            CKParser.SimpleExpressionContext simpleCtx = 
                                               exprCtx.simpleExpression().get(0);
             // Only a single term?
             if (simpleCtx.term().size() == 1)
             {
-                PascalParser.TermContext termCtx = simpleCtx.term().get(0);
+                CKParser.TermContext termCtx = simpleCtx.term().get(0);
                 
                 // Only a single factor?
                 if (termCtx.factor().size() == 1)
                 {
                     return termCtx.factor().get(0) instanceof 
-                                            PascalParser.VariableFactorContext;
+                                            CKParser.VariableFactorContext;
                 }
             }
         }
