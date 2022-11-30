@@ -57,27 +57,6 @@ public class CKBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements CKV
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitShiftCypherStatement(CKParser.ShiftCypherStatementContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitPolyCypherStatement(CKParser.PolyCypherStatementContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitStringAnalysisStatement(CKParser.StringAnalysisStatementContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
 	@Override public T visitVariableDeclarationStatement(CKParser.VariableDeclarationStatementContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -204,6 +183,13 @@ public class CKBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements CKV
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitRelationExpression(CKParser.RelationExpressionContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitSign(CKParser.SignContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
@@ -267,7 +253,14 @@ public class CKBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements CKV
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitParenthesizedFactor(CKParser.ParenthesizedFactorContext ctx) { return visitChildren(ctx); }
+	@Override public T visitBracketedFactor(CKParser.BracketedFactorContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitStringAnalysis(CKParser.StringAnalysisContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -275,6 +268,20 @@ public class CKBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements CKV
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitVariable(CKParser.VariableContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitFunctionDefinitionStatement(CKParser.FunctionDefinitionStatementContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitDefArgumentList(CKParser.DefArgumentListContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -358,12 +365,5 @@ public class CKBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements CKV
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitShiftOp(CKParser.ShiftOpContext ctx) { return visitChildren(ctx); }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation returns the result of calling
-	 * {@link #visitChildren} on {@code ctx}.</p>
-	 */
-	@Override public T visitPolyOp(CKParser.PolyOpContext ctx) { return visitChildren(ctx); }
+	@Override public T visitCypherOp(CKParser.CypherOpContext ctx) { return visitChildren(ctx); }
 }

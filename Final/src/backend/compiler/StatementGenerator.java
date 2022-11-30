@@ -2,7 +2,7 @@ package backend.compiler;
 
 import java.util.*;
 
-import antlr4.PascalParser;
+import antlr4.CKParser;
 
 import intermediate.symtab.*;
 import intermediate.type.*;
@@ -35,26 +35,14 @@ public class StatementGenerator extends CodeGenerator
      * Emit code for an assignment statement.
      * @param ctx the AssignmentStatementContext.
      */
-    public void emitAssignment(PascalParser.AssignmentStatementContext ctx)
+    public void emitAssignment(CKParser.AssignmentStatementContext ctx)
     {
-        PascalParser.VariableContext   varCtx  = ctx.lhs().variable();
-        PascalParser.ExpressionContext exprCtx = ctx.rhs().expression();
+        CKParser.VariableContext   varCtx  = ctx.lhs().variable();
+        CKParser.ExpressionContext exprCtx = ctx.rhs().expression();
         SymtabEntry varId = varCtx.entry;
         Typespec varType  = varCtx.type;
         Typespec exprType = exprCtx.type;
 
-        // The last modifier, if any, is the variable's last subscript or field.
-        int modifierCount = varCtx.modifier().size();
-        PascalParser.ModifierContext lastModCtx = modifierCount == 0
-                            ? null : varCtx.modifier().get(modifierCount - 1);
-
-        // The target variable has subscripts and/or fields.
-        if (modifierCount > 0) 
-        {
-            lastModCtx = varCtx.modifier().get(modifierCount - 1);
-            compiler.visit(varCtx);
-        }
-        
         // Emit code to evaluate the expression.
         compiler.visit(exprCtx);
         
@@ -63,27 +51,14 @@ public class StatementGenerator extends CodeGenerator
             && (exprType.baseType() == Predefined.integerType)) emit(I2F);
         
         // Emit code to store the expression value into the target variable.
-        // The target variable has no subscripts or fields.
-        if (lastModCtx == null) emitStoreValue(varId, varId.getType());
-
-        // The target variable is a field.
-        else if (lastModCtx.field() != null)
-        {
-            emitStoreValue(lastModCtx.field().entry, lastModCtx.field().type);
-        }
-
-        // The target variable is an array element.
-        else
-        {
-            emitStoreValue(null, varType);
-        }
+        emitStoreValue(varId, varId.getType());
     }
 
     /**
      * Emit code for an IF statement.
      * @param ctx the IfStatementContext.
      */
-    public void emitIf(PascalParser.IfStatementContext ctx)
+    public void emitIf(CKParser.IfStatementContext ctx)
     {
         Label met = new Label();
         Label end = new Label();
@@ -100,83 +75,10 @@ public class StatementGenerator extends CodeGenerator
     }
     
     /**
-     * Emit code for a CASE statement.
-     * @param ctx the CaseStatementContext.
-     */
-    public void emitCase(PascalParser.CaseStatementContext ctx)
-    {
-    	HashMap<PascalParser.CaseBranchContext, Label> branchMap = new HashMap<PascalParser.CaseBranchContext, Label>();    //branches
-    	TreeMap<Integer, Label> constantMap = new TreeMap<Integer, Label>();    //constants
-    	
-    	Label endLabel = new Label();
-    	
-    	for (int i = 0; i < ctx.caseBranchList().caseBranch().size(); i++)     //store branch labels
-    	{
-    		if (ctx.caseBranchList().caseBranch(i).caseConstantList() != null)
-    		{
-        		branchMap.put(ctx.caseBranchList().caseBranch(i), new Label());
-    		}
-    	}
-    	
-    	compiler.visit(ctx.expression());
-    	
-    	emit(LOOKUPSWITCH);
-    	
-    	for(Map.Entry<PascalParser.CaseBranchContext, Label> entry : branchMap.entrySet())    //store constants with branch labels
-    	{	
-    		if (entry.getKey().caseConstantList() != null)
-    		{
-    			for (int i = 0; i < entry.getKey().caseConstantList().caseConstant().size(); i++)
-    			{
-    				constantMap.put(entry.getKey().caseConstantList().caseConstant(i).value, entry.getValue());
-    			}
-    		}
-    	}
-    	
-    	for(Map.Entry<Integer, Label> entry : constantMap.entrySet())    //create constant labels within lookupswitch
-    	{
-    		emitLabel(entry.getKey(), entry.getValue());
-    	}
-    	
-    	emitLabel("default", endLabel);    //create default label within lookupswitch
-    	
-    	for(Map.Entry<PascalParser.CaseBranchContext, Label> entry : branchMap.entrySet())    //emit each branch label, visit statement, and go to default label
-    	{
-    		if (entry.getKey().caseConstantList() != null)
-    		{
-        		emitLabel(entry.getValue());
-        		compiler.visit(entry.getKey().statement());
-        		emit(GOTO, endLabel);
-    		}
-    	}
-    	
-    	emitLabel(endLabel);
-    }
-
-    /**
-     * Emit code for a REPEAT statement.
-     * @param ctx the RepeatStatementContext.
-     */
-    public void emitRepeat(PascalParser.RepeatStatementContext ctx)
-    {
-        Label loopTopLabel  = new Label();
-        Label loopExitLabel = new Label();
-
-        emitLabel(loopTopLabel);
-        
-        compiler.visit(ctx.statementList());
-        compiler.visit(ctx.expression());
-        emit(IFNE, loopExitLabel);
-        emit(GOTO, loopTopLabel);
-        
-        emitLabel(loopExitLabel);
-    }
-    
-    /**
      * Emit code for a WHILE statement.
      * @param ctx the WhileStatementContext.
      */
-    public void emitWhile(PascalParser.WhileStatementContext ctx)
+    public void emitWhile(CKParser.WhileStatementContext ctx)
     {
         Label loopTopLabel  = new Label();
         Label loopExitLabel = new Label();
@@ -192,73 +94,10 @@ public class StatementGenerator extends CodeGenerator
     }
     
     /**
-     * Emit code for a FOR statement.
-     * @param ctx the ForStatementContext.
-     */
-    public void emitFor(PascalParser.ForStatementContext ctx)
-    {
-        Label start = new Label();
-        Label end = new Label();
-        boolean flag = ctx.TO() != null;
-
-        // Storing value into variable
-        compiler.visit(ctx.expression(0));
-        emitStoreValue(ctx.variable().entry, ctx.variable().type);
-
-        // Start of loop
-        emitLabel(start);
-
-        // Checking condition
-        if(flag)
-        {
-            //checking to
-            compiler.visit(ctx.expression(1));
-            emitLoadValue(ctx.variable().entry);
-            emit(IF_ICMPLT, end);
-        }
-        else
-        {
-            //checking downto
-            compiler.visit(ctx.expression(1));
-            emitLoadValue(ctx.variable().entry);
-            emit(IF_ICMPGT, end);
-        }
-
-        // Main body of loop
-        compiler.visit(ctx.statement());
-
-        // Updating value of variable
-        emitLoadValue(ctx.variable().entry);
-        emitLoadConstant(1);
-        if(flag)
-        {
-            emit(IADD);
-        }
-        else
-        {
-            emit(ISUB);
-        }
-        emitStoreValue(ctx.variable().entry, ctx.variable().type);
-
-        // End of loop
-        emit(GOTO, start);
-        emitLabel(end);
-    }
-    
-    /**
-     * Emit code for a procedure call statement.
-     * @param ctx the ProcedureCallStatementContext.
-     */
-    public void emitProcedureCall(PascalParser.ProcedureCallStatementContext ctx)
-    {	
-        emitCall(ctx.procedureName().entry, ctx.argumentList());
-    }
-    
-    /**
      * Emit code for a function call statement.
      * @param ctx the FunctionCallContext.
      */
-    public void emitFunctionCall(PascalParser.FunctionCallContext ctx)
+    public void emitFunctionCall(CKParser.FunctionCallContext ctx)
     {
         emitCall(ctx.functionName().entry, ctx.argumentList());
     }
@@ -269,13 +108,13 @@ public class StatementGenerator extends CodeGenerator
      * @param argListCtx the ArgumentListContext.
      */
     private void emitCall(SymtabEntry routineId,
-                          PascalParser.ArgumentListContext argListCtx)
+                          CKParser.ArgumentListContext argListCtx)
     {
         if (argListCtx != null)			//visit argument expressions
         {
         	for(int i = 0; i < argListCtx.argument().size(); i++) 
         	{
-        		PascalParser.ExpressionContext expression = argListCtx.argument(i).expression();
+        		CKParser.ExpressionContext expression = argListCtx.argument(i).expression();
         		
         		compiler.visit(expression);
         		
@@ -309,21 +148,12 @@ public class StatementGenerator extends CodeGenerator
     }
 
     /**
-     * Emit code for a WRITE statement.
-     * @param ctx the WriteStatementContext.
+     * Emit code for a print statement.
+     * @param ctx the PrintStatementContext.
      */
-    public void emitWrite(PascalParser.WriteStatementContext ctx)
+    public void emitPrint(CKParser.PrintStatementContext ctx)
     {
-        emitWrite(ctx.writeArguments(), false);
-    }
-
-    /**
-     * Emit code for a WRITELN statement.
-     * @param ctx the WritelnStatementContext.
-     */
-    public void emitWriteln(PascalParser.WritelnStatementContext ctx)
-    {
-        emitWrite(ctx.writeArguments(), true);
+        emitPrint(ctx.expression(), false);
     }
 
     /**
@@ -331,7 +161,7 @@ public class StatementGenerator extends CodeGenerator
      * @param argsCtx the WriteArgumentsContext.
      * @param needLF true if need a line feed.
      */
-    private void emitWrite(PascalParser.WriteArgumentsContext argsCtx,
+    private void emitPrint(CKParser.ExpressionContext argsCtx,
                            boolean needLF)
     {
         emit(GETSTATIC, "java/lang/System/out", "Ljava/io/PrintStream;");
@@ -378,14 +208,14 @@ public class StatementGenerator extends CodeGenerator
      * @param format the format string to create.
      * @return the count of expression arguments.
      */
-    private int createWriteFormat(PascalParser.WriteArgumentsContext argsCtx,
+    private int createWriteFormat(CKParser.WriteArgumentsContext argsCtx,
                                   StringBuffer format, boolean needLF)
     {
         int exprCount = 0;
         format.append("\"");
         
         // Loop over the write arguments.
-        for (PascalParser.WriteArgumentContext argCtx : argsCtx.writeArgument())
+        for (CKParser.WriteArgumentContext argCtx : argsCtx.writeArgument())
         {
             Typespec type = argCtx.expression().type;
             String argText = argCtx.getText();
@@ -402,7 +232,7 @@ public class StatementGenerator extends CodeGenerator
                 exprCount++;
                 format.append("%");
                 
-                PascalParser.FieldWidthContext fwCtx = argCtx.fieldWidth();              
+                CKParser.FieldWidthContext fwCtx = argCtx.fieldWidth();
                 if (fwCtx != null)
                 {
                     String sign = (   (fwCtx.sign() != null) 
@@ -411,7 +241,7 @@ public class StatementGenerator extends CodeGenerator
                     format.append(sign)
                           .append(fwCtx.integerConstant().getText());
                     
-                    PascalParser.DecimalPlacesContext dpCtx = 
+                    CKParser.DecimalPlacesContext dpCtx =
                                                         fwCtx.decimalPlaces();
                     if (dpCtx != null)
                     {
@@ -439,7 +269,7 @@ public class StatementGenerator extends CodeGenerator
      * @param argsCtx
      * @param exprCount
      */
-    private void emitArgumentsArray(PascalParser.WriteArgumentsContext argsCtx,
+    private void emitArgumentsArray(CKParser.PrintArgumentsContext argsCtx,
                                     int exprCount)
     {
         // Create the arguments array.
@@ -449,11 +279,11 @@ public class StatementGenerator extends CodeGenerator
         int index = 0;
 
         // Loop over the write arguments to fill the arguments array.
-        for (PascalParser.WriteArgumentContext argCtx : 
+        for (CKParser.WriteArgumentContext argCtx :
                                                     argsCtx.writeArgument())
         {
             String argText = argCtx.getText();
-            PascalParser.ExpressionContext exprCtx = argCtx.expression();
+            CKParser.ExpressionContext exprCtx = argCtx.expression();
             Typespec type = exprCtx.type.baseType();
             
             // Skip string constants, which were made part of
@@ -475,92 +305,6 @@ public class StatementGenerator extends CodeGenerator
                 // Store the value into the array.
                 emit(AASTORE);
             }
-        }
-    }
-
-    /**
-     * Emit code for a READ statement.
-     * @param ctx the ReadStatementContext.
-     */
-    public void emitRead(PascalParser.ReadStatementContext ctx)
-    {
-        emitRead(ctx.readArguments(), false);
-    }
-
-    /**
-     * Emit code for a READLN statement.
-     * @param ctx the ReadlnStatementContext.
-     */
-    public void emitReadln(PascalParser.ReadlnStatementContext ctx)
-    {
-        emitRead(ctx.readArguments(), true);
-    }
-
-    /**
-     * Generate code for a call to READ or READLN.
-     * @param argsCtx the ReadArgumentsContext.
-     * @param needSkip true if need to skip the rest of the input line.
-     */
-    private void emitRead(PascalParser.ReadArgumentsContext argsCtx,
-                          boolean needSkip)
-    {
-        int size = argsCtx.variable().size();
-        
-        // Loop over read arguments.
-        for (int i = 0; i < size; i++)
-        {
-            PascalParser.VariableContext varCtx = argsCtx.variable().get(i);
-            Typespec varType = varCtx.type;
-            
-            if (varType == Predefined.integerType)
-            {
-                emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-                emit(INVOKEVIRTUAL, "java/util/Scanner/nextInt()I");
-                emitStoreValue(varCtx.entry, null);
-            }
-            else if (varType == Predefined.realType)
-            {
-                emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-                emit(INVOKEVIRTUAL, "java/util/Scanner/nextFloat()F");
-                emitStoreValue(varCtx.entry, null);
-            }
-            else if (varType == Predefined.booleanType)
-            {
-                emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-                emit(INVOKEVIRTUAL, "java/util/Scanner/nextBoolean()Z");
-                emitStoreValue(varCtx.entry, null);
-            }
-            else if (varType == Predefined.charType)
-            {
-                emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-                emit(LDC, "\"\"");
-                emit(INVOKEVIRTUAL, "java/util/Scanner/useDelimiter(Ljava/lang/String;)" +
-                                    "Ljava/util/Scanner;");
-                emit(POP);                
-                emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-                emit(INVOKEVIRTUAL, "java/util/Scanner/next()Ljava/lang/String;");
-                emit(ICONST_0);           
-                emit(INVOKEVIRTUAL, "java/lang/String/charAt(I)C");
-                emitStoreValue(varCtx.entry, null);
-                
-                emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-                emit(INVOKEVIRTUAL, "java/util/Scanner/reset()Ljava/util/Scanner;");
-
-            }
-            else  // string
-            {
-                emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-                emit(INVOKEVIRTUAL, "java/util/Scanner/next()Ljava/lang/String;");
-                emitStoreValue(varCtx.entry, null);
-            }
-        }
-
-        // READLN: Skip the rest of the input line.
-        if (needSkip) 
-        {
-            emit(GETSTATIC, programName + "/_sysin Ljava/util/Scanner;");
-            emit(INVOKEVIRTUAL, "java/util/Scanner/nextLine()Ljava/lang/String;");
-            emit(POP);                 
         }
     }
 }

@@ -9,8 +9,6 @@ import antlr4.*;
 import frontend.*;
 import intermediate.symtab.*;
 import intermediate.util.BackendMode;
-import backend.converter.Converter;
-import backend.interpreter.Executor;
 import backend.compiler.Compiler;
 
 import static intermediate.util.BackendMode.*;
@@ -31,13 +29,11 @@ public class Pascal
 
         BackendMode mode = EXECUTOR;
         
-        if      (option.equalsIgnoreCase("-convert")) mode = CONVERTER;
-        else if (option.equalsIgnoreCase("-execute")) mode = EXECUTOR;
-        else if (option.equalsIgnoreCase("-compile")) mode = COMPILER;
+        if (option.equalsIgnoreCase("-compile")) mode = COMPILER;
         else
         {
             System.out.println("ERROR: Invalid option.");
-            System.out.println("   Valid options: -convert, -execute, or -compile");
+            System.out.println("   Valid options: -compile");
         }
         
         // Generate a source file listing.
@@ -54,13 +50,13 @@ public class Pascal
         
         // Create a lexer which scans the character stream
         // to create a token stream.
-        PascalLexer lexer = new PascalLexer(cs);
+        CKLexer lexer = new CKLexer(cs);
         lexer.removeErrorListeners();
         lexer.addErrorListener(syntaxErrorHandler);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         
         // Create a parser which parses the token stream.
-        PascalParser parser = new PascalParser(tokens);
+        CKParser parser = new CKParser(tokens);
         
         // Pass 1: Check syntax and create the parse tree.
         System.out.printf("\nPASS 1 Syntax: ");
@@ -96,28 +92,6 @@ public class Pascal
         // Pass 3: Translation.
         switch (mode)
         {
-            case EXECUTOR:
-            {
-                // Pass 3: Execute the Pascal program.
-                System.out.printf("\nPASS 3 Execution:\n\n");
-                SymtabEntry programId = pass2.getProgramId();
-                Executor pass3 = new Executor(programId);
-                pass3.visit(tree);
-                break;
-            }
-            
-            case CONVERTER:
-            {
-                // Convert from Pascal to Java.
-                System.out.printf("\nPASS 3 Convert to Java: ");
-                Converter pass3 = new Converter();
-                pass3.visit(tree);
-                
-                System.out.printf("Object file \"%s\" created.\n",
-                                  pass3.getObjectFileName());
-                break;
-            }
-                
             case COMPILER:
             {
                 // Pass 3: Compile the Pascal program.

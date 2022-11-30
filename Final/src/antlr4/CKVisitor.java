@@ -46,24 +46,6 @@ public interface CKVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitStatement(CKParser.StatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CKParser#shiftCypherStatement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitShiftCypherStatement(CKParser.ShiftCypherStatementContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link CKParser#polyCypherStatement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPolyCypherStatement(CKParser.PolyCypherStatementContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link CKParser#stringAnalysisStatement}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitStringAnalysisStatement(CKParser.StringAnalysisStatementContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link CKParser#variableDeclarationStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -172,6 +154,12 @@ public interface CKVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpression(CKParser.ExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CKParser#relationExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRelationExpression(CKParser.RelationExpressionContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link CKParser#sign}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -232,18 +220,37 @@ public interface CKVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitNotFactor(CKParser.NotFactorContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code parenthesizedFactor}
+	 * Visit a parse tree produced by the {@code bracketedFactor}
 	 * labeled alternative in {@link CKParser#factor}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitParenthesizedFactor(CKParser.ParenthesizedFactorContext ctx);
+	T visitBracketedFactor(CKParser.BracketedFactorContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code stringAnalysis}
+	 * labeled alternative in {@link CKParser#factor}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStringAnalysis(CKParser.StringAnalysisContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CKParser#variable}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitVariable(CKParser.VariableContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CKParser#functionDefinitionStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFunctionDefinitionStatement(CKParser.FunctionDefinitionStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link CKParser#defArgumentList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDefArgumentList(CKParser.DefArgumentListContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CKParser#functionCall}.
 	 * @param ctx the parse tree
@@ -311,15 +318,9 @@ public interface CKVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMulOp(CKParser.MulOpContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CKParser#shiftOp}.
+	 * Visit a parse tree produced by {@link CKParser#cypherOp}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitShiftOp(CKParser.ShiftOpContext ctx);
-	/**
-	 * Visit a parse tree produced by {@link CKParser#polyOp}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitPolyOp(CKParser.PolyOpContext ctx);
+	T visitCypherOp(CKParser.CypherOpContext ctx);
 }

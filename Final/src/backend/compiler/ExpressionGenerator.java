@@ -1,6 +1,6 @@
 package backend.compiler;
 
-import antlr4.PascalParser;
+import antlr4.CKParser;
 
 import intermediate.symtab.*;
 import intermediate.type.*;
@@ -21,7 +21,7 @@ public class ExpressionGenerator extends CodeGenerator
 {
     /**
      * Constructor.
-     * @param the parent executor.
+     * @param parent the parent executor.
      */
     public ExpressionGenerator(CodeGenerator parent, Compiler compiler)
     {
@@ -32,83 +32,102 @@ public class ExpressionGenerator extends CodeGenerator
      * Emit code for an expression.
      * @param ctx the ExpressionContext.
      */
-    public void emitExpression(PascalParser.ExpressionContext ctx)
+    public void emitExpression(CKParser.ExpressionContext ctx)
     {
-        PascalParser.SimpleExpressionContext simpleCtx1 = 
-                                                ctx.simpleExpression().get(0);
-        PascalParser.RelOpContext relOpCtx = ctx.relOp();
+        CKParser.RelationExpressionContext relationCtx1 = ctx.relationExpression().get(0);
+        CKParser.CypherOpContext cypherOpCtx = ctx.cypherOp();
+        emitRelationExpression(relationCtx1);
+
+        if (cypherOpCtx != null)
+        {
+            String op = cypherOpCtx.getText();
+            CKParser.RelationExpressionContext relationCtx2 = ctx.relationExpression().get(1);
+            if(op == ">>")
+            {
+                emitRelationExpression(relationCtx2);
+                emit(INVOKESTATIC, "Cypher/shift(Ljava/lang/String;I)Ljava/lang/String");
+                //TODO: Emit proper library call
+            }
+            else
+            {
+                emitRelationExpression(relationCtx2);
+                emit(INVOKESTATIC, "Cypher/poly(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String");
+                //TODO: Emit proper library call
+            }
+        }
+    }
+
+    /**
+     * Emit code for an expression.
+     * @param ctx the ExpressionContext.
+     */
+    public void emitRelationExpression(CKParser.RelationExpressionContext ctx)
+    {
+        CKParser.SimpleExpressionContext simpleCtx1 =
+                ctx.simpleExpression().get(0);
+        CKParser.RelOpContext relOpCtx = ctx.relOp();
         Typespec type1 = simpleCtx1.type;
         emitSimpleExpression(simpleCtx1);
-        
+
         // More than one simple expression?
-        if (relOpCtx != null)
-        {
+        if (relOpCtx != null) {
             String op = relOpCtx.getText();
-            PascalParser.SimpleExpressionContext simpleCtx2 = 
-                                                ctx.simpleExpression().get(1);
+            CKParser.SimpleExpressionContext simpleCtx2 =
+                    ctx.simpleExpression().get(1);
             Typespec type2 = simpleCtx2.type;
 
-            boolean integerMode   = false;
-            boolean realMode      = false;
+            boolean integerMode = false;
+            boolean realMode = false;
             boolean characterMode = false;
 
-            if (   (type1 == Predefined.integerType)
-                && (type2 == Predefined.integerType)) 
-            {
+            if ((type1 == Predefined.integerType)
+                    && (type2 == Predefined.integerType)) {
                 integerMode = true;
-            }
-            else if (   (type1 == Predefined.realType) 
-                     || (type2 == Predefined.realType))
-            {
+            } else if ((type1 == Predefined.realType)
+                    || (type2 == Predefined.realType)) {
                 realMode = true;
-            }
-            else if (   (type1 == Predefined.charType) 
-                     && (type2 == Predefined.charType))
-            {
+            } else if ((type1 == Predefined.charType)
+                    && (type2 == Predefined.charType)) {
                 characterMode = true;
             }
 
             Label trueLabel = new Label();
             Label exitLabel = new Label();
 
-            if (integerMode || characterMode) 
-            {
+            if (integerMode || characterMode) {
                 emitSimpleExpression(simpleCtx2);
-                
-                if      (op.equals("=" )) emit(IF_ICMPEQ, trueLabel);
+
+                if (op.equals("=")) emit(IF_ICMPEQ, trueLabel);
                 else if (op.equals("<>")) emit(IF_ICMPNE, trueLabel);
-                else if (op.equals("<" )) emit(IF_ICMPLT, trueLabel);
+                else if (op.equals("<")) emit(IF_ICMPLT, trueLabel);
                 else if (op.equals("<=")) emit(IF_ICMPLE, trueLabel);
-                else if (op.equals(">" )) emit(IF_ICMPGT, trueLabel);
+                else if (op.equals(">")) emit(IF_ICMPGT, trueLabel);
                 else if (op.equals(">=")) emit(IF_ICMPGE, trueLabel);
-            }
-            else if (realMode)
-            {
+            } else if (realMode) {
                 if (type1 == Predefined.integerType) emit(I2F);
                 emitSimpleExpression(simpleCtx2);
                 if (type2 == Predefined.integerType) emit(I2F);
-                
+
                 emit(FCMPG);
 
-                if      (op.equals("=" )) emit(IFEQ, trueLabel);
+                if (op.equals("=")) emit(IFEQ, trueLabel);
                 else if (op.equals("<>")) emit(IFNE, trueLabel);
-                else if (op.equals("<" )) emit(IFLT, trueLabel);
+                else if (op.equals("<")) emit(IFLT, trueLabel);
                 else if (op.equals("<=")) emit(IFLE, trueLabel);
-                else if (op.equals(">" )) emit(IFGT, trueLabel);
+                else if (op.equals(">")) emit(IFGT, trueLabel);
                 else if (op.equals(">=")) emit(IFGE, trueLabel);
-            }
-            else  // stringMode
+            } else  // stringMode
             {
                 emitSimpleExpression(simpleCtx2);
                 emit(INVOKEVIRTUAL,
-                     "java/lang/String.compareTo(Ljava/lang/String;)I");
+                        "java/lang/String.compareTo(Ljava/lang/String;)I");
                 localStack.decrease(1);
-                
-                if      (op.equals("=" )) emit(IFEQ, trueLabel);
+
+                if (op.equals("=")) emit(IFEQ, trueLabel);
                 else if (op.equals("<>")) emit(IFNE, trueLabel);
-                else if (op.equals("<" )) emit(IFLT, trueLabel);
+                else if (op.equals("<")) emit(IFLT, trueLabel);
                 else if (op.equals("<=")) emit(IFLE, trueLabel);
-                else if (op.equals(">" )) emit(IFGT, trueLabel);
+                else if (op.equals(">")) emit(IFGT, trueLabel);
                 else if (op.equals(">=")) emit(IFGE, trueLabel);
             }
 
@@ -117,7 +136,7 @@ public class ExpressionGenerator extends CodeGenerator
             emitLabel(trueLabel);
             emit(ICONST_1); // true
             emitLabel(exitLabel);
-            
+
             localStack.decrease(1);  // only one branch will be taken
         }
     }
@@ -126,14 +145,14 @@ public class ExpressionGenerator extends CodeGenerator
      * Emit code for a simple expression.
      * @param ctx the SimpleExpressionContext.
      */
-    public void emitSimpleExpression(PascalParser.SimpleExpressionContext ctx)
+    public void emitSimpleExpression(CKParser.SimpleExpressionContext ctx)
     {
         int count = ctx.term().size();
         Boolean negate =    (ctx.sign() != null) 
                          && ctx.sign().getText().equals("-");
         
         // First term.
-        PascalParser.TermContext termCtx1 = ctx.term().get(0);
+        CKParser.TermContext termCtx1 = ctx.term().get(0);
         Typespec type1 = termCtx1.type;
         emitTerm(termCtx1);
         
@@ -143,7 +162,7 @@ public class ExpressionGenerator extends CodeGenerator
         for (int i = 1; i < count; i++)
         {
             String op = ctx.addOp().get(i-1).getText().toLowerCase();
-            PascalParser.TermContext termCtx2 = ctx.term().get(i);
+            CKParser.TermContext termCtx2 = ctx.term().get(i);
             Typespec type2 = termCtx2.type;
 
             boolean integerMode = false;
@@ -213,12 +232,12 @@ public class ExpressionGenerator extends CodeGenerator
      * Emit code for a term.
      * @param ctx the TermContext.
      */
-    public void emitTerm(PascalParser.TermContext ctx)
+    public void emitTerm(CKParser.TermContext ctx)
     {
         int count = ctx.factor().size();
         
         // First factor.
-        PascalParser.FactorContext factorCtx1 = ctx.factor().get(0);
+        CKParser.FactorContext factorCtx1 = ctx.factor().get(0);
         Typespec type1 = factorCtx1.type;
         compiler.visit(factorCtx1);
         
@@ -226,7 +245,7 @@ public class ExpressionGenerator extends CodeGenerator
         for (int i = 1; i < count; i++)
         {
             String op = ctx.mulOp().get(i-1).getText().toLowerCase();
-            PascalParser.FactorContext factorCtx2 = ctx.factor().get(i);
+            CKParser.FactorContext factorCtx2 = ctx.factor().get(i);
             Typespec type2 = factorCtx2.type;
 
             boolean integerMode = false;
@@ -273,117 +292,46 @@ public class ExpressionGenerator extends CodeGenerator
      * Emit code for NOT.
      * @param ctx the NotFactorContext.
      */
-    public void emitNotFactor(PascalParser.NotFactorContext ctx)
+    public void emitNotFactor(CKParser.NotFactorContext ctx)
     {
         compiler.visit(ctx.factor());
         emit(ICONST_1);
         emit(IXOR);
     }
 
+    public void emitStringAnalysis(CKParser.StringAnalysisContext ctx)
+    {
+        emitLoadVariable(ctx.variable());
+        emit(INVOKESTATIC, "Cypher/analysis(Ljava/lang/String;)Ljava/lang/String");
+        //TODO: emit proper function call
+    }
+
     /**
      * Emit code to load a scalar variable's value 
      * or a structured variable's address.
-     * @param ctx the VariableContext.
+     * @param varCtx the VariableContext.
      */
-    public void emitLoadValue(PascalParser.VariableContext varCtx)
+    public void emitLoadValue(CKParser.VariableContext varCtx)
     {
         // Load the scalar value or structure address.
         Typespec variableType = emitLoadVariable(varCtx);
-        
-        // Load an array element's or record field's value.
-        int modifierCount = varCtx.modifier().size();
-        if (modifierCount > 0)
-        {
-            PascalParser.ModifierContext lastModCtx =
-                                    varCtx.modifier().get(modifierCount - 1);
-            
-            if (lastModCtx.indexList() != null)
-            {
-                emitLoadArrayElementValue(variableType);
-            }
-            else
-            {
-                emitLoadRecordFieldValue(lastModCtx.field(), variableType);
-            }
-        }
     }
 
     /**
      * Emit code to load a scalar variable's value 
      * or a structured variable's address.
-     * @param variableNode the variable node.
+     * @param varCtx the variable node.
      * @return the datatype of the variable.
      */
-    public Typespec emitLoadVariable(PascalParser.VariableContext varCtx)
+    public Typespec emitLoadVariable(CKParser.VariableContext varCtx)
     {
         SymtabEntry variableId = varCtx.entry;
         Typespec variableType = variableId.getType();
-        int modifierCount = varCtx.modifier().size();
-        
+
         // Scalar value or structure address.
         emitLoadValue(variableId);
 
-        // Loop over subscript and field modifiers.
-        for (int i = 0; i < modifierCount; ++i)
-        {
-            PascalParser.ModifierContext modCtx = varCtx.modifier().get(i);
-            boolean lastModifier = i == modifierCount - 1;
-
-            // Subscript
-            if (modCtx.indexList() != null) 
-            {
-                variableType = emitLoadArrayElementAccess(
-                                modCtx.indexList(), variableType, lastModifier);
-            }
-            
-            // Field
-            else if (!lastModifier)
-            {
-                variableType = emitLoadRecordField(modCtx.field(), variableType);
-            }
-        }
-
         return variableType;
-    }
-
-    /**
-     * Emit code to access an array element by loading the array address
-     * and the subscript value. This can subsequently be followed by code
-     * to load the array element's value or to store into the array element. 
-     * @param subscriptsNode the SUBSCRIPTS node.
-     * @param elmtType the array element type.
-     * @param lastModifier true if this is the variable's last modifier.
-     * @return the type of the element.
-     */
-    private Typespec emitLoadArrayElementAccess(
-                                    PascalParser.IndexListContext indexListCtx,
-                                    Typespec elmtType, boolean lastModifier)
-    {
-        int indexCount = indexListCtx.index().size();
-        
-        // Loop over the subscripts.
-        for (int i = 0; i < indexCount; i++)
-        {
-            PascalParser.IndexContext indexCtx = indexListCtx.index().get(i);
-            emitExpression(indexCtx.expression());
-
-            Typespec indexType = elmtType.getArrayIndexType();
-
-            if (indexType.getForm() == SUBRANGE) 
-            {
-                int min = indexType.getSubrangeMinValue();
-                if (min != 0) 
-                {
-                    emitLoadConstant(min);
-                    emit(ISUB);
-                }
-            }
-
-            if (!lastModifier || (i < indexCount - 1)) emit(AALOAD);
-            elmtType = elmtType.getArrayElementType();
-        }
-
-        return elmtType;
     }
 
     /**
@@ -418,37 +366,11 @@ public class ExpressionGenerator extends CodeGenerator
         }
     }
     
-    private void emitLoadRecordFieldValue(
-                        PascalParser.FieldContext fieldCtx, Typespec recordType)
-    {
-        emitLoadRecordField(fieldCtx, recordType);
-    }
-
-    /**
-     * Emit code to load the address or value of a record field.
-     * @param fieldCtx the FieldContext.
-     * @param last true if this is the variable's last field, else false.
-     * @return the type of the field.
-     */
-    private Typespec emitLoadRecordField(
-                        PascalParser.FieldContext fieldCtx, Typespec recordType)
-    {
-        SymtabEntry fieldId = fieldCtx.entry;
-        String fieldName = fieldId.getName();
-        Typespec fieldType = fieldCtx.type;  
-        
-        String recordTypePath = recordType.getRecordTypePath();
-        String fieldPath = recordTypePath + "/" + fieldName;        
-        emit(GETFIELD, fieldPath, typeDescriptor(fieldType));
-
-        return fieldType;
-    }
-    
     /**
      * Emit code to load an integer constant.
      * @parm intCtx the IntegerConstantContext.
      */
-    public void emitLoadIntegerConstant(PascalParser.NumberContext intCtx)
+    public void emitLoadIntegerConstant(CKParser.NumberContext intCtx)
     {
         int value = Integer.parseInt(intCtx.getText());
         emitLoadConstant(value);
@@ -458,7 +380,7 @@ public class ExpressionGenerator extends CodeGenerator
      * Emit code to load real constant.
      * @parm intCtx the IntegerConstantContext.
      */
-    public void emitLoadRealConstant(PascalParser.NumberContext realCtx)
+    public void emitLoadRealConstant(CKParser.NumberContext realCtx)
     {
         float value = Float.parseFloat(realCtx.getText());
         emitLoadConstant(value);

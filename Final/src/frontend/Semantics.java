@@ -1,22 +1,17 @@
 package frontend;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import antlr4.*;
-import antlr4CK.*;
 
 import intermediate.symtab.*;
 import intermediate.symtab.SymtabEntry.Kind;
 import intermediate.type.*;
-import intermediate.type.Typespec.*;
 import intermediate.util.*;
 
 import static frontend.SemanticErrorHandler.Code.*;
 import static intermediate.symtab.SymtabEntry.Kind.*;
-import static intermediate.symtab.SymtabEntry.Routine.*;
 import static intermediate.type.Typespec.Form.*;
-import static intermediate.util.BackendMode.*;
 
 /**
  * Semantic operations.
@@ -272,29 +267,24 @@ public class Semantics extends CKBaseVisitor<Object>
      */
     private boolean expressionIsVariable(CKParser.ExpressionContext exprCtx)
     {
-    	// Only a single relation expression?
-    	if (exprCtx.relationExpression().size() == 1)
-        {
-            CKParser.RelationExpressionContext relCtx = 
-                                              exprCtx.relationExpression().get(0);
-            // Only a single simple expression?
-            if (relCtx.simpleExpression().size() == 1)
-            {
-            	CKParser.SimpleExpressionContext simpleCtx = 
-            										relCtx.simpleExpression().get(0);
-            	// Only a single term?
-            	if (simpleCtx.term().size() == 1)
-            	{
-            		CKParser.TermContext termCtx = simpleCtx.term().get(0);
-                
-            		// Only a single factor?
-            		if (termCtx.factor().size() == 1)
-            		{
-                 	  return termCtx.factor().get(0) instanceof 
-                 			  							CKParser.VariableFactorContext;
-            		}
-            	}
-            }
+        if (exprCtx.relationExpression().size() == 1) {
+                CKParser.RelationExpressionContext relCtx =
+                        exprCtx.relationExpression().get(0);
+                // Only a single simple expression?
+                if (relCtx.simpleExpression().size() == 1) {
+                    CKParser.SimpleExpressionContext simpleCtx =
+                            relCtx.simpleExpression().get(0);
+                    // Only a single term?
+                    if (simpleCtx.term().size() == 1) {
+                        CKParser.TermContext termCtx = simpleCtx.term().get(0);
+
+                        // Only a single factor?
+                        if (termCtx.factor().size() == 1) {
+                            return termCtx.factor().get(0) instanceof
+                                    CKParser.VariableFactorContext;
+                        }
+                    }
+                }
         }
         
         return false;
@@ -346,7 +336,7 @@ public class Semantics extends CKBaseVisitor<Object>
         // Loop over any subsequent simple expressions.
         for (int i = 1; i < count; i++)
         {
-        	CKParser.RelOpContext relOpCtx = ctx.relOp().get(i-1);
+        	CKParser.RelOpContext relOpCtx = ctx.relOp();
             
             if (relOpCtx != null)
             {
@@ -367,12 +357,12 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitSimpleExpression(PascalParser.SimpleExpressionContext ctx) 
+    public Object visitSimpleExpression(CKParser.SimpleExpressionContext ctx)
     {
         int count = ctx.term().size();
-        PascalParser.SignContext signCtx = ctx.sign();
+        CKParser.SignContext signCtx = ctx.sign();
         Boolean hasSign = signCtx != null;
-        PascalParser.TermContext termCtx1 = ctx.term().get(0);
+        CKParser.TermContext termCtx1 = ctx.term().get(0);
         
         if (hasSign)
         {
@@ -391,7 +381,7 @@ public class Semantics extends CKBaseVisitor<Object>
         for (int i = 1; i < count; i++)
         {
             String op = ctx.addOp().get(i-1).getText().toLowerCase();
-            PascalParser.TermContext termCtx2 = ctx.term().get(i);
+            CKParser.TermContext termCtx2 = ctx.term().get(i);
             visit(termCtx2);
             Typespec termType2 = termCtx2.type;
             
@@ -489,10 +479,10 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitTerm(PascalParser.TermContext ctx) 
+    public Object visitTerm(CKParser.TermContext ctx)
     {
         int count = ctx.factor().size();
-        PascalParser.FactorContext factorCtx1 = ctx.factor().get(0);
+        CKParser.FactorContext factorCtx1 = ctx.factor().get(0);
         
         // First factor.
         visit(factorCtx1);
@@ -502,7 +492,7 @@ public class Semantics extends CKBaseVisitor<Object>
         for (int i = 1; i < count; i++)
         {
             String op = ctx.mulOp().get(i-1).getText().toLowerCase();
-            PascalParser.FactorContext factorCtx2 = ctx.factor().get(i);
+            CKParser.FactorContext factorCtx2 = ctx.factor().get(i);
             visit(factorCtx2);
             Typespec factorType2 = factorCtx2.type;
             
@@ -597,9 +587,9 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitVariableFactor(PascalParser.VariableFactorContext ctx) 
+    public Object visitVariableFactor(CKParser.VariableFactorContext ctx)
     {
-        PascalParser.VariableContext varCtx = ctx.variable();
+        CKParser.VariableContext varCtx = ctx.variable();
         visit(varCtx);        
         ctx.type  = varCtx.type;
         
@@ -607,9 +597,9 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitVariable(PascalParser.VariableContext ctx) 
+    public Object visitVariable(CKParser.VariableContext ctx)
     {
-        PascalParser.VariableIdentifierContext varIdCtx = 
+        CKParser.VariableIdentifierContext varIdCtx =
                                                     ctx.variableIdentifier();
         
         visit(varIdCtx);
@@ -621,7 +611,7 @@ public class Semantics extends CKBaseVisitor<Object>
 
     @Override 
     public Object visitVariableIdentifier(
-                                    PascalParser.VariableIdentifierContext ctx) 
+                                    CKParser.VariableIdentifierContext ctx)
     {
         String variableName = ctx.IDENTIFIER().getText().toLowerCase();
         SymtabEntry variableId = symtabStack.lookup(variableName);
@@ -663,83 +653,19 @@ public class Semantics extends CKBaseVisitor<Object>
      * @return the datatype with any modifiers.
      */
     private Typespec variableDatatype(
-                        PascalParser.VariableContext varCtx, Typespec varType)
+                        CKParser.VariableContext varCtx, Typespec varType)
     {
         Typespec type = varType;
-        
-        // Loop over the modifiers.
-        for (PascalParser.ModifierContext modCtx : varCtx.modifier())
-        {
-            // Subscripts.
-            if (modCtx.indexList() != null)
-            {
-                PascalParser.IndexListContext indexListCtx = modCtx.indexList();
-                
-                // Loop over the subscripts.
-                for (PascalParser.IndexContext indexCtx : indexListCtx.index())
-                {
-                    if (type.getForm() == ARRAY)
-                    {
-                        Typespec indexType = type.getArrayIndexType();
-                        PascalParser.ExpressionContext exprCtx = 
-                                                        indexCtx.expression();
-                        visit(exprCtx);
-                        
-                        if (indexType.baseType() != exprCtx.type.baseType())
-                        {
-                            error.flag(TYPE_MISMATCH, exprCtx);
-                        }
-                        
-                        // Datatype of the next dimension.
-                        type = type.getArrayElementType();
-                    }
-                    else
-                    {
-                        error.flag(TOO_MANY_SUBSCRIPTS, indexCtx);
-                    }
-                }
-            }
-            else  // Record field.
-            {
-                if (type.getForm() == RECORD)
-                {
-                    Symtab symtab = type.getRecordSymtab();
-                    PascalParser.FieldContext fieldCtx = modCtx.field();
-                    String fieldName = 
-                                fieldCtx.IDENTIFIER().getText().toLowerCase();
-                    SymtabEntry fieldId = symtab.lookup(fieldName);
-
-                    // Field of the record type?
-                    if (fieldId != null) 
-                    {
-                        type = fieldId.getType();
-                        fieldCtx.entry = fieldId;
-                        fieldCtx.type = type;
-                        fieldId.appendLineNumber(modCtx.getStart().getLine());
-                    }
-                    else 
-                    {
-                        error.flag(INVALID_FIELD, modCtx);
-                    }
-                }
-                
-                // Not a record variable.
-                else 
-                {
-                    error.flag(INVALID_FIELD, modCtx);
-                }
-            }
-        }
         
         return type;
     }
     
     @Override 
-    public Object visitNumberFactor(PascalParser.NumberFactorContext ctx) 
+    public Object visitNumberFactor(CKParser.NumberFactorContext ctx)
     {
-        PascalParser.NumberContext          numberCtx   = ctx.number();
-        PascalParser.UnsignedNumberContext  unsignedCtx = numberCtx.unsignedNumber();
-        PascalParser.IntegerConstantContext integerCtx  = unsignedCtx.integerConstant();
+        CKParser.NumberContext          numberCtx   = ctx.number();
+        CKParser.UnsignedNumberContext  unsignedCtx = numberCtx.unsignedNumber();
+        CKParser.IntegerConstantContext integerCtx  = unsignedCtx.integerConstant();
 
         ctx.type = (integerCtx != null) ? Predefined.integerType
                                         : Predefined.realType;
@@ -749,23 +675,23 @@ public class Semantics extends CKBaseVisitor<Object>
 
     @Override 
     public Object visitCharacterFactor(
-                                    PascalParser.CharacterFactorContext ctx) 
+                                    CKParser.CharacterFactorContext ctx)
     {
         ctx.type = Predefined.charType;
         return null;
     }
 
     @Override 
-    public Object visitStringFactor(PascalParser.StringFactorContext ctx) 
+    public Object visitStringFactor(CKParser.StringFactorContext ctx)
     {
         ctx.type = Predefined.stringType;
         return null;
     }
 
     @Override 
-    public Object visitNotFactor(PascalParser.NotFactorContext ctx) 
+    public Object visitNotFactor(CKParser.NotFactorContext ctx)
     {
-        PascalParser.FactorContext factorCtx = ctx.factor();
+        CKParser.FactorContext factorCtx = ctx.factor();
         visit(factorCtx);
         
         if (factorCtx.type != Predefined.booleanType)
@@ -778,10 +704,10 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitParenthesizedFactor(
-                                    PascalParser.ParenthesizedFactorContext ctx) 
+    public Object visitBracketedFactor(
+                                    CKParser.BracketedFactorContext ctx)
     {
-        PascalParser.ExpressionContext exprCtx = ctx.expression();
+        CKParser.ExpressionContext exprCtx = ctx.expression();
         visit(exprCtx);
         ctx.type = exprCtx.type;
 

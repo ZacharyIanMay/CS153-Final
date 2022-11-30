@@ -8,7 +8,7 @@ import intermediate.symtab.Predefined;
 /**
  * Compile Pascal to Jasmin assembly language.
  */
-public class Compiler extends PascalBaseVisitor<Object>
+public class Compiler extends CKBaseVisitor<Object>
 {
     private SymtabEntry programId;  // symbol table entry of the program name
     private String programName;     // the program name
@@ -74,29 +74,20 @@ public class Compiler extends PascalBaseVisitor<Object>
     public String getObjectFileName() { return code.getObjectFileName(); }
     
     @Override 
-    public Object visitProgram(PascalParser.ProgramContext ctx) 
+    public Object visitProgram(CKParser.ProgramContext ctx)
     { 
         createNewGenerators(code);
         programCode.emitProgram(ctx);
         return null;
     }
 
-    @Override 
-    public Object visitRoutineDefinition(
-                                    PascalParser.RoutineDefinitionContext ctx) 
-    {
-        createNewGenerators(programCode);
-        programCode.emitRoutine(ctx);
-        return null;
-    }
-    
-    @Override 
-    public Object visitStatement(PascalParser.StatementContext ctx) 
+    @Override
+    public Object visitStatement(CKParser.StatementContext ctx)
     {
         if (   (ctx.compoundStatement() == null) 
             && (ctx.emptyStatement() == null))
         {
-            statementCode.emitComment(ctx);
+            statementCode.emitComment(ctx.getText());
         }
         
         return visitChildren(ctx);
@@ -104,78 +95,49 @@ public class Compiler extends PascalBaseVisitor<Object>
 
     @Override 
     public Object visitAssignmentStatement(
-                                    PascalParser.AssignmentStatementContext ctx) 
+                                    CKParser.AssignmentStatementContext ctx)
     {
         statementCode.emitAssignment(ctx);
         return null;
     }
 
     @Override 
-    public Object visitIfStatement(PascalParser.IfStatementContext ctx) 
+    public Object visitIfStatement(CKParser.IfStatementContext ctx)
     {
         statementCode.emitIf(ctx);
         return null;
     }
 
-    @Override 
-    public Object visitCaseStatement(PascalParser.CaseStatementContext ctx) 
-    {
-        statementCode.emitCase(ctx);
-        return null;
-    }
-
-    @Override 
-    public Object visitRepeatStatement(PascalParser.RepeatStatementContext ctx) 
-    {
-        statementCode.emitRepeat(ctx);
-        return null;
-    }
-
-    @Override 
-    public Object visitWhileStatement(PascalParser.WhileStatementContext ctx) 
+    @Override
+    public Object visitWhileStatement(CKParser.WhileStatementContext ctx)
     {
         statementCode.emitWhile(ctx);
         return null;
     }
 
-    @Override 
-    public Object visitForStatement(PascalParser.ForStatementContext ctx) 
-    {
-        statementCode.emitFor(ctx);
-        return null;
-    }
-
-    @Override 
-    public Object visitProcedureCallStatement(
-                                PascalParser.ProcedureCallStatementContext ctx) 
-    {
-        statementCode.emitProcedureCall(ctx);
-        return null;
-    }
-
-    @Override 
-    public Object visitExpression(PascalParser.ExpressionContext ctx) 
+    @Override
+    public Object visitExpression(CKParser.ExpressionContext ctx)
     {
         expressionCode.emitExpression(ctx);
         return null;
     }
 
     @Override 
-    public Object visitVariableFactor(PascalParser.VariableFactorContext ctx) 
+    public Object visitVariableFactor(CKParser.VariableFactorContext ctx)
     {
         expressionCode.emitLoadValue(ctx.variable());
         return null;
     }
 
     @Override 
-    public Object visitVariable(PascalParser.VariableContext ctx) 
+    public Object visitVariable(CKParser.VariableContext ctx)
     {
         expressionCode.emitLoadVariable(ctx);        
         return null;
     }
 
     @Override 
-    public Object visitNumberFactor(PascalParser.NumberFactorContext ctx) 
+    public Object visitNumberFactor(CKParser.NumberFactorContext ctx)
     {
         if (ctx.type == Predefined.integerType) 
         {
@@ -190,7 +152,7 @@ public class Compiler extends PascalBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitCharacterFactor(PascalParser.CharacterFactorContext ctx) 
+    public Object visitCharacterFactor(CKParser.CharacterFactorContext ctx)
     {
         char ch = ctx.getText().charAt(1);
         expressionCode.emitLoadConstant(ch);
@@ -199,7 +161,7 @@ public class Compiler extends PascalBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitStringFactor(PascalParser.StringFactorContext ctx) 
+    public Object visitStringFactor(CKParser.StringFactorContext ctx)
     {
         String jasminString = convertString(ctx.getText());
         expressionCode.emitLoadConstant(jasminString);
@@ -220,51 +182,37 @@ public class Compiler extends PascalBaseVisitor<Object>
 
     @Override 
     public Object visitFunctionCallFactor(
-                                    PascalParser.FunctionCallFactorContext ctx) 
+                                    CKParser.FunctionCallFactorContext ctx)
     {
         statementCode.emitFunctionCall(ctx.functionCall());
         return null;
     }
 
     @Override 
-    public Object visitNotFactor(PascalParser.NotFactorContext ctx) 
+    public Object visitNotFactor(CKParser.NotFactorContext ctx)
     {
         expressionCode.emitNotFactor(ctx);
         return null;
     }
 
-    @Override 
-    public Object visitParenthesizedFactor(
-                                    PascalParser.ParenthesizedFactorContext ctx) 
+    @Override
+    public Object visitStringAnalysis(CKParser.StringAnalysisContext ctx)
     {
-        return visit(ctx.expression());
-    }
-
-    @Override 
-    public Object visitWriteStatement(PascalParser.WriteStatementContext ctx) 
-    {
-        statementCode.emitWrite(ctx);
+        expressionCode.emitStringAnalysis(ctx);
         return null;
     }
 
     @Override 
-    public Object visitWritelnStatement(PascalParser.WritelnStatementContext ctx) 
+    public Object visitBracketedFactor(
+                                    CKParser.BracketedFactorContext ctx)
     {
-        statementCode.emitWriteln(ctx);
-        return null;
+        return visitExpression(ctx.expression());
     }
 
     @Override 
-    public Object visitReadStatement(PascalParser.ReadStatementContext ctx) 
+    public Object visitPrintStatement(CKParser.PrintStatementContext ctx)
     {
-        statementCode.emitRead(ctx);
-        return null;
-    }
-
-    @Override 
-    public Object visitReadlnStatement(PascalParser.ReadlnStatementContext ctx) 
-    {
-        statementCode.emitReadln(ctx);
+        statementCode.emitPrint(ctx);
         return null;
     }
 }

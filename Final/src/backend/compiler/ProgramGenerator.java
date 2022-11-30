@@ -2,7 +2,7 @@ package backend.compiler;
 
 import java.util.ArrayList;
 
-import antlr4.PascalParser;
+import antlr4.CKParser;
 import intermediate.symtab.Symtab;
 import intermediate.symtab.SymtabEntry;
 import intermediate.symtab.SymtabEntry.Kind;
@@ -20,7 +20,7 @@ public class ProgramGenerator extends CodeGenerator
 
     /**
      * Constructor.
-     * @param the parent generator.
+     * @param parent the parent generator.
      * @param compiler the compiler to use.
      */
     public ProgramGenerator(CodeGenerator parent, Compiler compiler)
@@ -35,7 +35,7 @@ public class ProgramGenerator extends CodeGenerator
      * Emit code for a program.
      * @param ctx the ProgramContext.
      */
-    public void emitProgram(PascalParser.ProgramContext ctx)
+    public void emitProgram(CKParser.ProgramContext ctx)
     {
         programId = ctx.programHeader().programIdentifier().entry;
         Symtab programSymtab = programId.getRoutineSymtab();
@@ -50,7 +50,6 @@ public class ProgramGenerator extends CodeGenerator
         emitProgramVariables();
         emitInputScanner();
         emitConstructor();
-        emitSubroutines(ctx.block().declarations().routinesPart());
         
         emitMainMethod(ctx);
     }
@@ -172,26 +171,10 @@ public class ProgramGenerator extends CodeGenerator
     }
 
     /**
-     * Emit code for any nested procedures and functions.
-     */
-    private void emitSubroutines(PascalParser.RoutinesPartContext ctx)
-    {
-        if (ctx != null)
-        {
-            for (PascalParser.RoutineDefinitionContext defnCtx : 
-                                                        ctx.routineDefinition())
-            {
-                compiler = new Compiler(compiler);
-                compiler.visit(defnCtx);
-            }
-        }     
-    }
-
-    /**
      * Emit code for the program body as the main method.
      * @param ctx the ProgramContext.
      */
-    private void emitMainMethod(PascalParser.ProgramContext ctx)
+    private void emitMainMethod(CKParser.ProgramContext ctx)
     {
         emitLine();
         emitComment("MAIN");
@@ -207,7 +190,7 @@ public class ProgramGenerator extends CodeGenerator
 
         // Emit code for the compound statement.
         emitLine();
-        compiler.visit(ctx.block().compoundStatement());
+        compiler.visit(ctx.compoundStatement());
         
         emitMainEpilogue();
     }
@@ -275,11 +258,11 @@ public class ProgramGenerator extends CodeGenerator
 
     /**
      * Emit code for a declared procedure or function
-     * @param routineId the symbol table entry of the routine's name.
+     * @param ctx the symbol table entry of the routine's name.
      */
-    public void emitRoutine(PascalParser.RoutineDefinitionContext ctx)
+    public void emitRoutine(CKParser.RoutineDefinitionContext ctx)
     {
-        SymtabEntry routineId = ctx.procedureHead() != null 
+        SymtabEntry routineId = ctx.procedureHead() != null
                                 ? ctx.procedureHead().routineIdentifier().entry
                                 : ctx.functionHead().routineIdentifier().entry;
         Symtab routineSymtab = routineId.getRoutineSymtab();
@@ -288,17 +271,17 @@ public class ProgramGenerator extends CodeGenerator
         emitRoutineLocals(routineId);
 
         // Generate code to allocate any arrays, records, and strings.
-        StructuredDataGenerator structuredCode = 
+        StructuredDataGenerator structuredCode =
                                     new StructuredDataGenerator(this, compiler);
         structuredCode.emitData(routineId);
-                
+
         localVariables = new LocalVariables(routineSymtab.getMaxSlotNumber());
 
         // Emit code for the compound statement.
-        PascalParser.CompoundStatementContext stmtCtx = 
-            (PascalParser.CompoundStatementContext) routineId.getExecutable();
+        CKParser.CompoundStatementContext stmtCtx =
+            (CKParser.CompoundStatementContext) routineId.getExecutable();
         compiler.visit(stmtCtx);
-        
+
         emitRoutineReturn(routineId);
         emitRoutineEpilogue();
     }
@@ -318,7 +301,7 @@ public class ProgramGenerator extends CodeGenerator
         buffer.append("(");
 
         // Parameter and return type descriptors.
-        if (parmIds != null) 
+        if (parmIds != null)
         {
             for (SymtabEntry parmId : parmIds)
             {
@@ -329,7 +312,7 @@ public class ProgramGenerator extends CodeGenerator
         buffer.append(typeDescriptor(routineId));
 
         emitLine();
-        if (routineId.getKind() == PROCEDURE) 
+        if (routineId.getKind() == PROCEDURE)
         {
             emitComment("PROCEDURE " + routineName);
         }
@@ -337,7 +320,7 @@ public class ProgramGenerator extends CodeGenerator
         {
             emitComment("FUNCTION " + routineName);
         }
-              
+
         emitDirective(METHOD_PRIVATE_STATIC, buffer.toString());
     }
 

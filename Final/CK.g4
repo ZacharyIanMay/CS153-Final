@@ -56,7 +56,7 @@ expression          locals [ Typespec type = null ]
     : relationExpression (cypherOp relationExpression)? ;
 
 relationExpression        locals [ Typespec type = null ]
-    : simpleExpression (relOp simpleExpression)* ;
+    : simpleExpression (relOp simpleExpression)? ;
 
 sign : '-' | '+' ;
     

@@ -3,7 +3,7 @@ package backend.compiler;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 
-import antlr4.PascalParser;
+import antlr4.*;
 
 import intermediate.symtab.*;
 import intermediate.symtab.SymtabEntry.Kind;
@@ -53,8 +53,8 @@ public class CodeGenerator
     
     /**
      * Constructor for code generator subclasses.
-     * @param the parent code generator.
-     * @param the compiler to use.
+     * @param parent the parent code generator.
+     * @param compiler the compiler to use.
      */
     public CodeGenerator(CodeGenerator parent, Compiler compiler)
     {
@@ -118,7 +118,7 @@ public class CodeGenerator
      * Emit a statement comment.
      * @param ctx the StatementContext.
      */
-    public void emitComment(PascalParser.StatementContext ctx)
+    public void emitComment(CKParser.StatementContext ctx)
     {
         String text = String.format("%03d %s", ctx.getStart().getLine(), 
                                                ctx.getText());
@@ -195,7 +195,8 @@ public class CodeGenerator
     /**
      * Emit a 2-operand directive.
      * @param directive the directive code.
-     * @param operand the operand.
+     * @param operand1 the first operand.
+     * @param operand2 the second operand.
      */
     public void emitDirective(Directive directive,
                               String operand1, String operand2)
@@ -209,7 +210,9 @@ public class CodeGenerator
     /**
      * Emit a 3-operand directive.
      * @param directive the directive code.
-     * @param operand the operand.
+     * @param operand1 the first operand.
+     * @param operand2 the second operand.
+     * @param operand3 the third operand.
      */
     public void emitDirective(Directive directive,
                                String operand1, String operand2,
