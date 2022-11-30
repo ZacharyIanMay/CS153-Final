@@ -295,28 +295,28 @@ public class Semantics extends CKBaseVisitor<Object>
     }
 
     @Override 
-    public Object visitExpression(PascalParser.ExpressionContext ctx) 
+    public Object visitExpression(CKParser.ExpressionContext ctx) 
     {
-        PascalParser.SimpleExpressionContext simpleCtx1 =
-                                                ctx.simpleExpression().get(0);
+        CKParser.RelationExpressionContext relCtx1 =
+                                                ctx.relationExpression().get(0);
 
-        // First simple expression.
-        visit(simpleCtx1);
+        // First relation expression.
+        visit(relCtx1);
         
-        Typespec simpleType1 = simpleCtx1.type;
-        ctx.type = simpleType1;
+        Typespec relType1 = relCtx1.type;
+        ctx.type = relType1;
         
-        PascalParser.RelOpContext relOpCtx = ctx.relOp();
+        CKParser.CypherOpContext cyphOpCtx = ctx.cypherOp();
         
         // Second simple expression?
-        if (relOpCtx != null)
+        if (cyphOpCtx != null)
         {
-            PascalParser.SimpleExpressionContext simpleCtx2 = 
-                                                ctx.simpleExpression().get(1);
-            visit(simpleCtx2);
+            CKParser.RelationExpressionContext relCtx2 = 
+                                                ctx.relationExpression().get(1);
+            visit(relCtx2);
             
-            Typespec simpleType2 = simpleCtx2.type;
-            if (!TypeChecker.areComparisonCompatible(simpleType1, simpleType2))
+            Typespec relType2 = relCtx2.type;
+            if (!TypeChecker.areComparisonCompatible(relType1, relType2))
             {
                 error.flag(INCOMPATIBLE_COMPARISON, ctx);
             }
