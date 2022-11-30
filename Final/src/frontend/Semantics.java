@@ -272,22 +272,28 @@ public class Semantics extends CKBaseVisitor<Object>
      */
     private boolean expressionIsVariable(CKParser.ExpressionContext exprCtx)
     {
-        // Only a single simple expression?
-        if (exprCtx.simpleExpression().size() == 1)
+    	// Only a single relation expression?
+    	if (exprCtx.relationExpression().size() == 1)
         {
-            CKParser.SimpleExpressionContext simpleCtx = 
-                                              exprCtx.simpleExpression().get(0);
-            // Only a single term?
-            if (simpleCtx.term().size() == 1)
+            CKParser.RelationExpressionContext relCtx = 
+                                              exprCtx.relationExpression().get(0);
+            // Only a single simple expression?
+            if (relCtx.simpleExpression().size() == 1)
             {
-                CKParser.TermContext termCtx = simpleCtx.term().get(0);
+            	CKParser.SimpleExpressionContext simpleCtx = 
+            										relCtx.simpleExpression().get(0);
+            	// Only a single term?
+            	if (simpleCtx.term().size() == 1)
+            	{
+            		CKParser.TermContext termCtx = simpleCtx.term().get(0);
                 
-                // Only a single factor?
-                if (termCtx.factor().size() == 1)
-                {
-                    return termCtx.factor().get(0) instanceof 
-                                            CKParser.VariableFactorContext;
-                }
+            		// Only a single factor?
+            		if (termCtx.factor().size() == 1)
+            		{
+                 	  return termCtx.factor().get(0) instanceof 
+                 			  							CKParser.VariableFactorContext;
+            		}
+            	}
             }
         }
         
@@ -308,7 +314,7 @@ public class Semantics extends CKBaseVisitor<Object>
         
         CKParser.CypherOpContext cyphOpCtx = ctx.cypherOp();
         
-        // Second simple expression?
+        // Second relation expression?
         if (cyphOpCtx != null)
         {
             CKParser.RelationExpressionContext relCtx2 = 
@@ -321,9 +327,42 @@ public class Semantics extends CKBaseVisitor<Object>
                 error.flag(INCOMPATIBLE_COMPARISON, ctx);
             }
             
-            ctx.type = Predefined.booleanType;
+            ctx.type = Predefined.stringType;
         }
         
+        return null;
+    }
+    
+    @Override 
+    public Object visitRelationExpression(CKParser.RelationExpressionContext ctx) 
+    {
+        int count = ctx.simpleExpression().size();
+        CKParser.SimpleExpressionContext simpExprCtx1 = ctx.simpleExpression().get(0);
+        
+        // First simple expression.
+        visit(simpExprCtx1);
+        Typespec simpExprType1 = simpExprCtx1.type;        
+        
+        // Loop over any subsequent simple expressions.
+        for (int i = 1; i < count; i++)
+        {
+        	CKParser.RelOpContext relOpCtx = ctx.relOp().get(i-1);
+            
+            if (relOpCtx != null)
+            {
+            	CKParser.SimpleExpressionContext simpExprCtx2 = ctx.simpleExpression().get(i);
+            	visit(simpExprCtx2);
+                Typespec simpExprType2 = simpExprCtx2.type;
+
+                if (!TypeChecker.areComparisonCompatible(simpExprType1, simpExprType2))
+                {
+                    error.flag(INCOMPATIBLE_COMPARISON, ctx);
+                }
+                
+                ctx.type = Predefined.booleanType;
+            }
+        }
+
         return null;
     }
 
