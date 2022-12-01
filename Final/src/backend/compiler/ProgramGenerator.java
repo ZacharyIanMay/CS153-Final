@@ -260,13 +260,10 @@ public class ProgramGenerator extends CodeGenerator
      * Emit code for a declared procedure or function
      * @param ctx the symbol table entry of the routine's name.
      */
-    public void emitRoutine(CKParser.RoutineDefinitionContext ctx)
+    public void emitRoutine(CKParser.FunctionDefinitionStatementContext ctx)
     {
-        SymtabEntry routineId = ctx.procedureHead() != null
-                                ? ctx.procedureHead().routineIdentifier().entry
-                                : ctx.functionHead().routineIdentifier().entry;
+        SymtabEntry routineId = ctx.entry;
         Symtab routineSymtab = routineId.getRoutineSymtab();
-
         emitRoutineHeader(routineId);
         emitRoutineLocals(routineId);
 
