@@ -153,7 +153,7 @@ public class StatementGenerator extends CodeGenerator
      */
     public void emitPrint(CKParser.PrintStatementContext ctx)
     {
-        emitPrint(ctx.expression(), false);
+        emitPrint(ctx, false);
     }
 
     /**
@@ -161,7 +161,7 @@ public class StatementGenerator extends CodeGenerator
      * @param argsCtx the WriteArgumentsContext.
      * @param needLF true if need a line feed.
      */
-    private void emitPrint(CKParser.ExpressionContext argsCtx,
+    private void emitPrint(CKParser.PrintStatementContext argsCtx,
                            boolean needLF)
     {
         emit(GETSTATIC, "java/lang/System/out", "Ljava/io/PrintStream;");
@@ -182,23 +182,10 @@ public class StatementGenerator extends CodeGenerator
             // Load the format string.
             emit(LDC, format.toString());
             
-            // Emit the arguments array.
-            if (exprCount > 0)
-            {
-                emitArgumentsArray(argsCtx, exprCount);
-
-                emit(INVOKEVIRTUAL,
-                     "java/io/PrintStream/printf(Ljava/lang/String;[Ljava/lang/Object;)" +
-                     "Ljava/io/PrintStream;");
-                localStack.decrease(2);
-                emit(POP);
-            }
-            else
-            {
-                emit(INVOKEVIRTUAL,
-                     "java/io/PrintStream/print(Ljava/lang/String;)V");
-                localStack.decrease(2);
-            }
+     
+            emit(INVOKEVIRTUAL,
+                   "java/io/PrintStream/print(Ljava/lang/String;)V");
+            localStack.decrease(2);
         }
     }
     
@@ -208,103 +195,26 @@ public class StatementGenerator extends CodeGenerator
      * @param format the format string to create.
      * @return the count of expression arguments.
      */
-    private int createWriteFormat(CKParser.WriteArgumentsContext argsCtx,
+    private int createWriteFormat(CKParser.PrintStatementContext printCtx,
                                   StringBuffer format, boolean needLF)
     {
         int exprCount = 0;
         format.append("\"");
         
-        // Loop over the write arguments.
-        for (CKParser.WriteArgumentContext argCtx : argsCtx.writeArgument())
+
+        Typespec type = printCtx.expression().type;
+        String argText = printCtx.getText();
+            
+        // Append any literal strings.
+        if (argText.charAt(0) == '\'') 
         {
-            Typespec type = argCtx.expression().type;
-            String argText = argCtx.getText();
-            
-            // Append any literal strings.
-            if (argText.charAt(0) == '\'') 
-            {
-                format.append(convertString(argText));
-            }
-            
-            // For any other expressions, append a field specifier.
-            else
-            {
-                exprCount++;
-                format.append("%");
-                
-                CKParser.FieldWidthContext fwCtx = argCtx.fieldWidth();
-                if (fwCtx != null)
-                {
-                    String sign = (   (fwCtx.sign() != null) 
-                                   && (fwCtx.sign().getText().equals("-"))) 
-                                ? "-" : "";
-                    format.append(sign)
-                          .append(fwCtx.integerConstant().getText());
-                    
-                    CKParser.DecimalPlacesContext dpCtx =
-                                                        fwCtx.decimalPlaces();
-                    if (dpCtx != null)
-                    {
-                        format.append(".")
-                              .append(dpCtx.integerConstant().getText());
-                    }
-                }
-                
-                String typeFlag = type == Predefined.integerType ? "d" 
-                                : type == Predefined.realType    ? "f" 
-                                : type == Predefined.booleanType ? "b" 
-                                : type == Predefined.charType    ? "c" 
-                                :                                  "s";
-                format.append(typeFlag);
-            }
+            format.append(convertString(argText));
         }
-        
+                
         format.append(needLF ? "\\n\"" : "\"");
  
         return exprCount;
     }
     
-    /**
-     * Emit the printf arguments array.
-     * @param argsCtx
-     * @param exprCount
-     */
-    private void emitArgumentsArray(CKParser.PrintArgumentsContext argsCtx,
-                                    int exprCount)
-    {
-        // Create the arguments array.
-        emitLoadConstant(exprCount);
-        emit(ANEWARRAY, "java/lang/Object");
-
-        int index = 0;
-
-        // Loop over the write arguments to fill the arguments array.
-        for (CKParser.WriteArgumentContext argCtx :
-                                                    argsCtx.writeArgument())
-        {
-            String argText = argCtx.getText();
-            CKParser.ExpressionContext exprCtx = argCtx.expression();
-            Typespec type = exprCtx.type.baseType();
-            
-            // Skip string constants, which were made part of
-            // the format string.
-            if (argText.charAt(0) != '\'') 
-            {
-                emit(DUP);
-                emitLoadConstant(index++);
-
-                compiler.visit(exprCtx);
-
-                Form form = type.getForm();
-                if (    ((form == SCALAR) || (form == ENUMERATION))
-                     && (type != Predefined.stringType))
-                {
-                    emit(INVOKESTATIC, valueOfSignature(type));
-                }
-
-                // Store the value into the array.
-                emit(AASTORE);
-            }
-        }
-    }
+    
 }
