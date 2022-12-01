@@ -181,8 +181,6 @@ public class StatementGenerator extends CodeGenerator
             
             // Load the format string.
             emit(LDC, format.toString());
-            
-            System.out.println("print called!!");
      
             emit(INVOKEVIRTUAL,
                    "java/io/PrintStream/print(Ljava/lang/String;)V");
