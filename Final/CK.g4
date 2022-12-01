@@ -39,11 +39,11 @@ lhs locals [ Typespec type = null ]
     : variable ;
 rhs : expression ;
 
-ifStatement    : IF expression trueStatement ( ELSE falseStatement )? ;
+ifStatement    : IF '[' expression ']' trueStatement ( ELSE falseStatement )? ;
 trueStatement  : statement ;
 falseStatement : statement ;
 
-whileStatement  : WHILE expression statement ;
+whileStatement  : WHILE '[' expression ']' statement ;
 
 functionCallStatement : functionCall ;
 
