@@ -182,6 +182,7 @@ public class StatementGenerator extends CodeGenerator
             // Load the format string.
             emit(LDC, format.toString());
             
+            System.out.println("print called!!");
      
             emit(INVOKEVIRTUAL,
                    "java/io/PrintStream/print(Ljava/lang/String;)V");
@@ -203,12 +204,12 @@ public class StatementGenerator extends CodeGenerator
         
 
         Typespec type = printCtx.expression().type;
-        String argText = printCtx.getText();
+        String printText = printCtx.expression().getText();
             
         // Append any literal strings.
-        if (argText.charAt(0) == '\'') 
+        if (printText.charAt(0) == '\'') 
         {
-            format.append(convertString(argText));
+            format.append(convertString(printText));
         }
                 
         format.append(needLF ? "\\n\"" : "\"");
