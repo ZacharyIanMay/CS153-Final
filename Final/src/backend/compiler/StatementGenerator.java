@@ -3,13 +3,16 @@ package backend.compiler;
 import java.util.*;
 
 import antlr4.CKParser;
-
+import antlr4.CKParser.VariableIdentifierContext;
 import intermediate.symtab.*;
 import intermediate.type.*;
 import intermediate.type.Typespec.Form;
+import intermediate.util.BackendMode;
+import frontend.Semantics;
 
 import static intermediate.type.Typespec.Form.*;
 import static backend.compiler.Instruction.*;
+import static frontend.SemanticErrorHandler.Code.UNDECLARED_IDENTIFIER;
 
 /**
  * <h1>StatementGenerator</h1>
@@ -21,6 +24,7 @@ import static backend.compiler.Instruction.*;
  */
 public class StatementGenerator extends CodeGenerator
 {
+	
     /**
      * Constructor.
      * @param parent the parent generator.
@@ -42,7 +46,7 @@ public class StatementGenerator extends CodeGenerator
         SymtabEntry varId = varCtx.entry;
         Typespec varType  = varCtx.type;
         Typespec exprType = exprCtx.type;
-
+        
         // Emit code to evaluate the expression.
         compiler.visit(exprCtx);
         
@@ -177,13 +181,14 @@ public class StatementGenerator extends CodeGenerator
         else
         {
             StringBuffer format = new StringBuffer();
-            int exprCount = createWriteFormat(argsCtx, format, needLF);
-            
-            // Load the format string.
-            emit(LDC, format.toString());
+            createWriteFormat(argsCtx, format, needLF);
+
+            String text = format.toString();
+            emit(LDC, text);
      
             emit(INVOKEVIRTUAL,
                    "java/io/PrintStream/print(Ljava/lang/String;)V");
+            
             localStack.decrease(2);
         }
     }
@@ -205,15 +210,27 @@ public class StatementGenerator extends CodeGenerator
         String printText = printCtx.expression().getText();
             
         // Append any literal strings.
-        if (printText.charAt(0) == '\'') 
+        if (printText.charAt(0) == '\'')    //string
         {
             format.append(convertString(printText));
+        } 
+        else   //variable
+        {
+        	String variableName = printCtx.expression().getText().toLowerCase();
+        	String x = "";
+        	for (ArrayList<String> l : Semantics.variables) 
+			{
+				if (l.contains(variableName))
+				{
+					x = l.get(1);
+					format.append(x);
+				}
+			}
+        	
         }
                 
         format.append(needLF ? "\\n\"" : "\"");
  
         return exprCount;
     }
-    
-    
 }
