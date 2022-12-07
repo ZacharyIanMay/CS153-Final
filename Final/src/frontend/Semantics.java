@@ -717,3 +717,31 @@ public class Semantics extends CKBaseVisitor<Object>
         return null;
     }
 }
+
+@Override 
+    public Object visitPrintStatement(
+                                    CKParser.PrintStatementContext ctx)
+    {
+    	String print = "";
+    	if (!(ctx.expression().getText().substring(0,1).equals("'")))    //print variable
+        {
+    		String variableName = ctx.expression().getText().toLowerCase();
+    		SymtabEntry variableId = symtabStack.lookup(variableName);
+    		
+    		if (variableId != null)
+    		{
+    			print = (String) variableId.getValue();
+    			return print;
+    		}
+    		else
+    		{
+    			error.flag(UNDECLARED_IDENTIFIER, ctx);
+    		}
+        } else     //print text
+        {
+        	print = (String) ctx.expression().getText();
+        	return print;
+        }
+
+        return null;
+    }
