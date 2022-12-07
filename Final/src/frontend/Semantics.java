@@ -104,6 +104,9 @@ public class Semantics extends CKBaseVisitor<Object>
         Typespec lhsType = lhsCtx.type;
         Typespec rhsType = rhsCtx.expression().type;
         
+        SymtabEntry variableId = symtabStack.lookupLocal(ctx.lhs().getText());
+        variableId.setValue((String) ctx.rhs().getText());
+        
         if (!TypeChecker.areAssignmentCompatible(lhsType, rhsType))
         {
             error.flag(INCOMPATIBLE_ASSIGNMENT, rhsCtx);
