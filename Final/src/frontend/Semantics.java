@@ -9,6 +9,7 @@ import intermediate.symtab.SymtabEntry.Kind;
 import intermediate.type.*;
 import intermediate.util.*;
 
+import static backend.compiler.Instruction.LDC;
 import static frontend.SemanticErrorHandler.Code.*;
 import static intermediate.symtab.SymtabEntry.Kind.*;
 import static intermediate.type.Typespec.Form.*;
@@ -24,6 +25,8 @@ public class Semantics extends CKBaseVisitor<Object>
     private SymtabEntry programId;
     private SemanticErrorHandler error;
     
+    public static ArrayList<ArrayList<String>> variables;
+    
     public Semantics(BackendMode mode)
     {
         // Create and initialize the symbol table stack.
@@ -32,6 +35,7 @@ public class Semantics extends CKBaseVisitor<Object>
         
         this.mode = mode;
         this.error = new SemanticErrorHandler();
+        this.variables = new ArrayList<ArrayList<String>>();
     }
     
     public SymtabEntry getProgramId() { return programId; }
@@ -86,8 +90,45 @@ public class Semantics extends CKBaseVisitor<Object>
     public Object visitVariableDeclarationStatement(
                                 CKParser.VariableDeclarationStatementContext ctx) 
     { 
+    	CKParser.TypeIdentifierContext typeCtx = ctx.typeIdentifier();
     	visit(ctx.typeIdentifier());
-        visit(ctx.variableIdentifier());
+        CKParser.VariableIdentifierContext idCtx = ctx.variableIdentifier();
+    	
+        int lineNumber = idCtx.getStart().getLine();
+        String variableName = idCtx.getText().toLowerCase();
+        SymtabEntry variableId = symtabStack.lookupLocal(variableName);
+    	
+        if (variableId == null)
+        {
+            variableId = symtabStack.enterLocal(variableName, VARIABLE);
+            if (typeCtx.getText().equals("S"))
+            {
+            	variableId.setType(Predefined.stringType);
+            } 
+            else if (typeCtx.getText().equals("I"))
+            {
+            	variableId.setType(Predefined.integerType);
+            }
+            else if (typeCtx.getText().equals("D"))
+            {
+            	variableId.setType(Predefined.realType);
+            }
+            
+            // Assign slot numbers to local variables.
+            Symtab symtab = variableId.getSymtab();
+            if (symtab.getNestingLevel() > 1)
+            {
+                variableId.setSlotNumber(symtab.nextSlotNumber());
+            }
+            
+            idCtx.entry = variableId;
+        }
+        else
+        {
+            error.flag(REDECLARED_IDENTIFIER, ctx);
+        }
+        
+        variableId.appendLineNumber(lineNumber);  
         
         return null;
     }
@@ -334,7 +375,8 @@ public class Semantics extends CKBaseVisitor<Object>
         
         // First simple expression.
         visit(simpExprCtx1);
-        Typespec simpExprType1 = simpExprCtx1.type;        
+        Typespec simpExprType1 = simpExprCtx1.type;    
+        ctx.type = simpExprType1;
         
         // Loop over any subsequent simple expressions.
         for (int i = 1; i < count; i++)
@@ -716,14 +758,13 @@ public class Semantics extends CKBaseVisitor<Object>
 
         return null;
     }
-}
-
-@Override 
+    
+    @Override 
     public Object visitPrintStatement(
                                     CKParser.PrintStatementContext ctx)
     {
     	String print = "";
-    	if (!(ctx.expression().getText().substring(0,1).equals("'")))    //print variable
+    	if (!(ctx.expression().getText().substring(0,1).equals("'")))		//print variable value
         {
     		String variableName = ctx.expression().getText().toLowerCase();
     		SymtabEntry variableId = symtabStack.lookup(variableName);
@@ -731,6 +772,24 @@ public class Semantics extends CKBaseVisitor<Object>
     		if (variableId != null)
     		{
     			print = (String) variableId.getValue();
+    			//System.out.println("Print variable = " + print);
+
+    			boolean alreadyInVariables = false;
+    			for (ArrayList<String> l : variables) 
+    			{
+    				if (l.contains(variableName))
+    				{
+    					l.set(1, print);
+    					alreadyInVariables = true;
+    				}
+    			}
+    			if (!alreadyInVariables)
+    			{
+        			ArrayList<String> v = new ArrayList<String>();
+        			v.add(variableName);
+        			v.add(print);
+        			variables.add(v);
+    			}
     			return print;
     		}
     		else
@@ -740,8 +799,10 @@ public class Semantics extends CKBaseVisitor<Object>
         } else     //print text
         {
         	print = (String) ctx.expression().getText();
+        	//System.out.println("Print text = " + print);
         	return print;
         }
 
         return null;
     }
+}
