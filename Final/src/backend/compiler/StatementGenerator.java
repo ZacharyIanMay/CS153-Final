@@ -159,11 +159,11 @@ public class StatementGenerator extends CodeGenerator
     {
         if(printType == Predefined.integerType)
         {
-            emitPrint(ctx);
+            emitPrintInteger(ctx);
         }
         else if(printType == Predefined.realType)
         {
-            emitPrint(ctx);
+            emitPrintReal(ctx);
         }
         else
         {
@@ -219,10 +219,10 @@ public class StatementGenerator extends CodeGenerator
         // Generate code for the arguments.
         else
         {
-//            StringBuffer format = new StringBuffer();
-//            createWriteFormat(argsCtx, format, needLF);
-//
-//            String text = format.toString();
+            StringBuffer format = new StringBuffer();
+            createWriteFormat(argsCtx, format, false);
+
+            String text = format.toString();
 //            emit(LDC, text);
 
             emit(INVOKEVIRTUAL, "java/io/PrintStream/print(I)V");
@@ -249,10 +249,10 @@ public class StatementGenerator extends CodeGenerator
         // Generate code for the arguments.
         else
         {
-//            StringBuffer format = new StringBuffer();
-//            createWriteFormat(argsCtx, format, needLF);
-//
-//            String text = format.toString();
+            StringBuffer format = new StringBuffer();
+            createWriteFormat(argsCtx, format, false);
+
+            String text = format.toString();
 //            emit(LDC, text);
 
             emit(INVOKEVIRTUAL, "java/io/PrintStream/print(F)V");
