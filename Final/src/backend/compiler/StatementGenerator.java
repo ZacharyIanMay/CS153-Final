@@ -281,7 +281,7 @@ public class StatementGenerator extends CodeGenerator
         if (printText.charAt(0) == '\'')    //string
         {
             format.append(convertString(printText));
-            //emit(LDC, printText);
+            emit(LDC, printText.replace("'", "\""));
         } 
         else   //variable
         {
