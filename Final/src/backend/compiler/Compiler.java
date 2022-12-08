@@ -4,6 +4,7 @@ import antlr4.*;
 
 import intermediate.symtab.*;
 import intermediate.symtab.Predefined;
+import intermediate.type.Typespec;
 
 /**
  * Compile Pascal to Jasmin assembly language.
@@ -119,6 +120,15 @@ public class Compiler extends CKBaseVisitor<Object>
     public Object visitExpression(CKParser.ExpressionContext ctx)
     {
         expressionCode.emitExpression(ctx);
+        try
+        {
+            CKParser.FactorContext f = ctx.relationExpression(0).simpleExpression(0).term(0).factor(0);
+            return f.type;
+        }
+        catch(Exception e)
+        {
+
+        }
         return null;
     }
 
@@ -212,7 +222,8 @@ public class Compiler extends CKBaseVisitor<Object>
     @Override 
     public Object visitPrintStatement(CKParser.PrintStatementContext ctx)
     {
-        statementCode.emitPrint(ctx);
+        Typespec pType = ctx.expression().type;
+        statementCode.emitPrint(ctx, pType);
         return null;
     }
 }

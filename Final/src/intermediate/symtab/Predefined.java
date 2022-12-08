@@ -77,13 +77,13 @@ public class Predefined
     private static void initializeTypes(SymtabStack symTabStack)
     {
         // Type integer.
-        integerId = symTabStack.enterLocal("integer", TYPE);
+        integerId = symTabStack.enterLocal("i", TYPE);
         integerType = new Typespec(SCALAR);
         integerType.setIdentifier(integerId);
         integerId.setType(integerType);
 
         // Type real.
-        realId = symTabStack.enterLocal("real", TYPE);
+        realId = symTabStack.enterLocal("d", TYPE);
         realType = new Typespec(SCALAR);
         realType.setIdentifier(realId);
         realId.setType(realType);
@@ -101,7 +101,7 @@ public class Predefined
         charId.setType(charType);
 
         // Type string.
-        stringId = symTabStack.enterLocal("string", TYPE);
+        stringId = symTabStack.enterLocal("s", TYPE);
         stringType = new Typespec(SCALAR);
         stringType.setIdentifier(stringId);
         stringId.setType(stringType);

@@ -325,7 +325,7 @@ public class ExpressionGenerator extends CodeGenerator
      */
     public Typespec emitLoadVariable(CKParser.VariableContext varCtx)
     {
-        SymtabEntry variableId = varCtx.entry;
+        SymtabEntry variableId = varCtx.variableIdentifier().entry;
         Typespec variableType = variableId.getType();
 
         // Scalar value or structure address.

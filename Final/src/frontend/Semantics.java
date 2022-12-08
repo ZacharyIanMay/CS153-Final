@@ -101,18 +101,7 @@ public class Semantics extends CKBaseVisitor<Object>
         if (variableId == null)
         {
             variableId = symtabStack.enterLocal(variableName, VARIABLE);
-            if (typeCtx.getText().equals("S"))
-            {
-            	variableId.setType(Predefined.stringType);
-            } 
-            else if (typeCtx.getText().equals("I"))
-            {
-            	variableId.setType(Predefined.integerType);
-            }
-            else if (typeCtx.getText().equals("D"))
-            {
-            	variableId.setType(Predefined.realType);
-            }
+            variableId.setType(typeCtx.type);
             
             // Assign slot numbers to local variables.
             Symtab symtab = variableId.getSymtab();
@@ -130,6 +119,36 @@ public class Semantics extends CKBaseVisitor<Object>
         
         variableId.appendLineNumber(lineNumber);  
         
+        return null;
+    }
+
+    @Override
+    public Object visitTypeIdentifier(CKParser.TypeIdentifierContext ctx)
+    {
+        String typeName = ctx.IDENTIFIER().getText().toLowerCase();
+        SymtabEntry typeId = symtabStack.lookup(typeName);
+
+        if (typeId != null)
+        {
+            if (typeId.getKind() != TYPE)
+            {
+                error.flag(INVALID_TYPE, ctx);
+                ctx.type = Predefined.integerType;
+            }
+            else
+            {
+                ctx.type = typeId.getType();
+            }
+
+            typeId.appendLineNumber(ctx.start.getLine());
+        }
+        else
+        {
+            error.flag(UNDECLARED_IDENTIFIER, ctx);
+            ctx.type = Predefined.integerType;
+        }
+
+        ctx.entry = typeId;
         return null;
     }
     
@@ -162,7 +181,7 @@ public class Semantics extends CKBaseVisitor<Object>
         CKParser.VariableContext varCtx = ctx.variable();
         visit(varCtx);
         ctx.type = varCtx.type;
-        
+
         return null;
     }
 
@@ -635,9 +654,9 @@ public class Semantics extends CKBaseVisitor<Object>
     public Object visitVariableFactor(CKParser.VariableFactorContext ctx)
     {
         CKParser.VariableContext varCtx = ctx.variable();
-        visit(varCtx);        
-        ctx.type  = varCtx.type;
-        
+        visit(varCtx);
+        ctx.type = varCtx.type;
+
         return null;
     }
 
@@ -763,6 +782,7 @@ public class Semantics extends CKBaseVisitor<Object>
     public Object visitPrintStatement(
                                     CKParser.PrintStatementContext ctx)
     {
+        visit(ctx.expression());
     	String print = "";
     	if (!(ctx.expression().getText().substring(0,1).equals("'")))		//print variable value
         {

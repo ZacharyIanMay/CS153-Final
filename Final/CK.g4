@@ -26,8 +26,10 @@ statement : compoundStatement
           ;
 
 variableDeclarationStatement : typeIdentifier variableIdentifier;
-typeIdentifier : IDENTIFIER;
-variableIdentifier locals [ Typespec type = null, SymtabEntry entry = null ] : IDENTIFIER;
+typeIdentifier      locals [ Typespec type = null, SymtabEntry entry = null ]
+    : IDENTIFIER ;
+variableIdentifier locals [ Typespec type = null, SymtabEntry entry = null ]
+    : IDENTIFIER;
 
 compoundStatement : '{' statementList '}' ;
 emptyStatement : ;
@@ -37,7 +39,8 @@ assignmentStatement : lhs '=' rhs ;
 
 lhs locals [ Typespec type = null ] 
     : variable ;
-rhs : expression ;
+rhs locals [ Typespec type = null ]
+    : expression ;
 
 ifStatement    : IF '[' expression ']' trueStatement ( ELSE falseStatement )? ;
 trueStatement  : statement ;

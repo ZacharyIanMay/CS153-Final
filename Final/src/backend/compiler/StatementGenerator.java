@@ -155,47 +155,115 @@ public class StatementGenerator extends CodeGenerator
      * Emit code for a print statement.
      * @param ctx the PrintStatementContext.
      */
-    public void emitPrint(CKParser.PrintStatementContext ctx)
+    public void emitPrint(CKParser.PrintStatementContext ctx, Typespec printType)
     {
-        emitPrint(ctx, false);
+        if(printType == Predefined.integerType)
+        {
+            emitPrint(ctx);
+        }
+        else if(printType == Predefined.realType)
+        {
+            emitPrint(ctx);
+        }
+        else
+        {
+            emitPrint(ctx);
+        }
     }
 
     /**
      * Emit code for a call to WRITE or WRITELN.
      * @param argsCtx the WriteArgumentsContext.
-     * @param needLF true if need a line feed.
      */
-    private void emitPrint(CKParser.PrintStatementContext argsCtx,
-                           boolean needLF)
+    private void emitPrint(CKParser.PrintStatementContext argsCtx)
     {
         emit(GETSTATIC, "java/lang/System/out", "Ljava/io/PrintStream;");
 
         // WRITELN with no arguments.
-        if (argsCtx == null) 
+        if (argsCtx == null)
         {
             emit(INVOKEVIRTUAL, "java/io/PrintStream.println()V");
             localStack.decrease(1);
         }
-            
+
         // Generate code for the arguments.
         else
         {
             StringBuffer format = new StringBuffer();
-            createWriteFormat(argsCtx, format, needLF);
+            createWriteFormat(argsCtx, format, false);
 
             String text = format.toString();
-            emit(LDC, text);
-     
-            emit(INVOKEVIRTUAL,
-                   "java/io/PrintStream/print(Ljava/lang/String;)V");
-            
+//            emit(LDC, text);
+
+            emit(INVOKEVIRTUAL, "java/io/PrintStream/print(Ljava/lang/String;)V");
+
+            localStack.decrease(2);
+        }
+    }
+
+    /**
+     * Emit code for a call to WRITE or WRITELN.
+     * @param argsCtx the WriteArgumentsContext.
+     */
+    private void emitPrintInteger(CKParser.PrintStatementContext argsCtx)
+    {
+        emit(GETSTATIC, "java/lang/System/out", "Ljava/io/PrintStream;");
+
+        // WRITELN with no arguments.
+        if (argsCtx == null)
+        {
+            emit(INVOKEVIRTUAL, "java/io/PrintStream.println()V");
+            localStack.decrease(1);
+        }
+
+        // Generate code for the arguments.
+        else
+        {
+//            StringBuffer format = new StringBuffer();
+//            createWriteFormat(argsCtx, format, needLF);
+//
+//            String text = format.toString();
+//            emit(LDC, text);
+
+            emit(INVOKEVIRTUAL, "java/io/PrintStream/print(I)V");
+
+            localStack.decrease(2);
+        }
+    }
+
+    /**
+     * Emit code for a call to WRITE or WRITELN.
+     * @param argsCtx the WriteArgumentsContext.
+     */
+    private void emitPrintReal(CKParser.PrintStatementContext argsCtx)
+    {
+        emit(GETSTATIC, "java/lang/System/out", "Ljava/io/PrintStream;");
+
+        // WRITELN with no arguments.
+        if (argsCtx == null)
+        {
+            emit(INVOKEVIRTUAL, "java/io/PrintStream.println()V");
+            localStack.decrease(1);
+        }
+
+        // Generate code for the arguments.
+        else
+        {
+//            StringBuffer format = new StringBuffer();
+//            createWriteFormat(argsCtx, format, needLF);
+//
+//            String text = format.toString();
+//            emit(LDC, text);
+
+            emit(INVOKEVIRTUAL, "java/io/PrintStream/print(F)V");
+
             localStack.decrease(2);
         }
     }
     
     /**
      * Create the printf format string.
-     * @param argsCtx the WriteArgumentsContext.
+     * @param printCtx the WriteArgumentsContext.
      * @param format the format string to create.
      * @return the count of expression arguments.
      */
@@ -213,10 +281,22 @@ public class StatementGenerator extends CodeGenerator
         if (printText.charAt(0) == '\'')    //string
         {
             format.append(convertString(printText));
+            //emit(LDC, printText);
         } 
         else   //variable
         {
         	String variableName = printCtx.expression().getText().toLowerCase();
+            try
+            {
+                CKParser.VariableFactorContext fc = (CKParser.VariableFactorContext) printCtx.expression().relationExpression(0).simpleExpression(0).term(0).getChild(0);
+                CKParser.VariableContext vc = fc.variable();
+                emitLoadValue(vc.entry);
+            }
+            catch(Exception e)
+            {
+
+            }
+
         	String x = "";
         	for (ArrayList<String> l : Semantics.variables) 
 			{

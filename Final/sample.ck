@@ -31,7 +31,7 @@ while[i < 10]
 
 F S deshift[I amount, S cyphertext]
 {
-	deshift = cyphertext >> (26 - amount);
+	deshift = cyphertext >> [26 - amount];
 }
 
 }
