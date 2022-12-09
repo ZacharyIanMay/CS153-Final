@@ -375,9 +375,10 @@ public class Semantics extends CKBaseVisitor<Object>
             visit(relCtx2);
             
             Typespec relType2 = relCtx2.type;
-            if (!TypeChecker.areComparisonCompatible(relType1, relType2))
+
+            if ((cyphOpCtx.getText() == ">>" && !(relType1 == Predefined.stringType && relType2 == Predefined.integerType)) || (cyphOpCtx.getText() == "<<" && !(relType1 == Predefined.stringType && relType2 == Predefined.stringType)))
             {
-                error.flag(INCOMPATIBLE_COMPARISON, ctx);
+                error.flag(INCOMPATIBLE_ASSIGNMENT, ctx);
             }
             
             ctx.type = Predefined.stringType;
@@ -745,9 +746,17 @@ public class Semantics extends CKBaseVisitor<Object>
         return null;
     }
 
-    @Override 
+    @Override
     public Object visitStringFactor(CKParser.StringFactorContext ctx)
     {
+        ctx.type = Predefined.stringType;
+        return null;
+    }
+
+    @Override
+    public Object visitStringAnalysis(CKParser.StringAnalysisContext ctx)
+    {
+        visit(ctx.variable());
         ctx.type = Predefined.stringType;
         return null;
     }

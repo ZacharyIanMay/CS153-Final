@@ -1,8 +1,8 @@
 P simple[parameters]
 {
 
-%print['hello\n'];%
-%print['test\n'];%
+print['hello\n'];
+print['test\n'];
 
 S plain;
 plain = 'The quick red fox jumped over the lazy brown dog';

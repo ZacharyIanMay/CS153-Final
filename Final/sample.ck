@@ -1,5 +1,10 @@
-P name[parameters]
+P test[parameters]
 {
+
+F S deshift[I amount, S cyphertext]
+{
+	deshift = cyphertext >> [26 - amount];
+};
 
 S plain;
 plain = 'The quick red fox jumped over the lazy brown dog';
@@ -28,10 +33,5 @@ while[i < 10]
 	print[i];
 	i = i + 1;
 };
-
-F S deshift[I amount, S cyphertext]
-{
-	deshift = cyphertext >> [26 - amount];
-}
 
 }

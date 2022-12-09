@@ -42,16 +42,16 @@ public class ExpressionGenerator extends CodeGenerator
         {
             String op = cypherOpCtx.getText();
             CKParser.RelationExpressionContext relationCtx2 = ctx.relationExpression().get(1);
-            if(op == ">>")
+            if(op.equals(">>"))
             {
                 emitRelationExpression(relationCtx2);
-                emit(INVOKESTATIC, "Cypher/shift(Ljava/lang/String;I)Ljava/lang/String");
+                emit(INVOKESTATIC, "cypher/shift(Ljava/lang/String;I)Ljava/lang/String;");
                 //TODO: Emit proper library call
             }
             else
             {
                 emitRelationExpression(relationCtx2);
-                emit(INVOKESTATIC, "Cypher/poly(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String");
+                emit(INVOKESTATIC, "cypher/poly(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
                 //TODO: Emit proper library call
             }
         }
@@ -97,7 +97,7 @@ public class ExpressionGenerator extends CodeGenerator
             if (integerMode || characterMode) {
                 emitSimpleExpression(simpleCtx2);
 
-                if (op.equals("=")) emit(IF_ICMPEQ, trueLabel);
+                if (op.equals("==")) emit(IF_ICMPEQ, trueLabel);
                 else if (op.equals("<>")) emit(IF_ICMPNE, trueLabel);
                 else if (op.equals("<")) emit(IF_ICMPLT, trueLabel);
                 else if (op.equals("<=")) emit(IF_ICMPLE, trueLabel);
@@ -110,7 +110,7 @@ public class ExpressionGenerator extends CodeGenerator
 
                 emit(FCMPG);
 
-                if (op.equals("=")) emit(IFEQ, trueLabel);
+                if (op.equals("==")) emit(IFEQ, trueLabel);
                 else if (op.equals("<>")) emit(IFNE, trueLabel);
                 else if (op.equals("<")) emit(IFLT, trueLabel);
                 else if (op.equals("<=")) emit(IFLE, trueLabel);
@@ -123,7 +123,7 @@ public class ExpressionGenerator extends CodeGenerator
                         "java/lang/String.compareTo(Ljava/lang/String;)I");
                 localStack.decrease(1);
 
-                if (op.equals("=")) emit(IFEQ, trueLabel);
+                if (op.equals("==")) emit(IFEQ, trueLabel);
                 else if (op.equals("<>")) emit(IFNE, trueLabel);
                 else if (op.equals("<")) emit(IFLT, trueLabel);
                 else if (op.equals("<=")) emit(IFLE, trueLabel);
@@ -302,7 +302,7 @@ public class ExpressionGenerator extends CodeGenerator
     public void emitStringAnalysis(CKParser.StringAnalysisContext ctx)
     {
         emitLoadVariable(ctx.variable());
-        emit(INVOKESTATIC, "Cypher/analysis(Ljava/lang/String;)Ljava/lang/String");
+        emit(INVOKESTATIC, "cypher/analysis(Ljava/lang/String;)Ljava/lang/String;");
         //TODO: emit proper function call
     }
 
