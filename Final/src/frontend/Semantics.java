@@ -244,6 +244,8 @@ public class Semantics extends CKBaseVisitor<Object>
                         functionName, FUNCTION);
         functionId.setRoutineCode(DECLARED);
         functNameCtx.entry = functionId;
+        int lineNumber = ctx.getStart().getLine(); 
+        functionId.appendLineNumber(lineNumber);
         
         // Append to the parent routine's list of subroutines.
         SymtabEntry parentId = symtabStack.getLocalSymtab().getOwner();
@@ -911,7 +913,6 @@ public class Semantics extends CKBaseVisitor<Object>
     		if (variableId != null)
     		{
     			print = (String) variableId.getValue();
-    			//System.out.println("Print variable = " + print);
 
     			boolean alreadyInVariables = false;
     			for (ArrayList<String> l : variables) 
@@ -938,7 +939,6 @@ public class Semantics extends CKBaseVisitor<Object>
         } else     //print text
         {
         	print = (String) ctx.expression().getText();
-        	//System.out.println("Print text = " + print);
         	return print;
         }
 
