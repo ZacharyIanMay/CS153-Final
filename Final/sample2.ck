@@ -1,28 +1,95 @@
-P simple[parameters]
+P sample2[parameters]
 {
 
-print['hello\n'];
-print['test\n'];
+%encyphers plaintext by given amount%
+F S encypher[I amount, S plaintext]
+{
+	encypher = plaintext >> amount;
+};
+
+%encyphers plaintext based on key%
+F S poly[S key, S plaintext]
+{
+	poly = plaintext << key;
+};
+
+%performs string analysis%
+F S analysis[S text]
+{
+	analysis = text @;
+};
+
+print['\nEXECUTING: SAMPLE2\n\n'];
 
 S plain;
-plain = 'The quick red fox jumped over the lazy brown dog';
+plain = 'lets go san jose state university spartans';
+S cypher;
+S cypherAnalysis;
 
-I i;
-i = 0;
+I amount;
+amount = 1024;
 
-D j;
-j = 1.1;
+I j;
+j = 2;
 
-print[plain];
+print['while loop:'];
 print['\n'];
-print[i];
-print['\n'];
-print[j];
-print['\n'];
-
-while[i<10]
+print['\n------------------------------------------------------------------\n'];
+while[amount > 10]
 {
-    print[i];
-    i=i+1;
+	cypher = encypher[amount, plain];
+	cypherAnalysis = analysis['cypher'];
+	print['shift amount = '];
+	print[amount];
+	print['\n\n'];
+	print['Cypher = '];
+	print[cypher];
+	print['\n\n'];
+	print['Cypher String Analysis = '];
+	print[cypherAnalysis]; %String analysis%
+	print['\n------------------------------------------------------------------\n'];
+	amount = amount DIV j;
+};
+
+S result;
+result = cypher >> 10;
+
+print['if statement:'];
+print['\n\n'];
+if[plain == result]
+{
+	S polyalphabet;
+	polyalphabet = poly['sjsu', plain];
+   	
+	S polyalphabetAnalysis;
+	polyalphabetAnalysis = analysis[polyalphabet];
+	
+	print['Polyalphabet = '];
+	print[polyalphabet];
+	print['\n\n'];
+	
+	print['Polyalphabet String Analysis = '];
+	print[polyalphabetAnalysis]; %String analysis%
+	print['\n\n'];
+
+	print['decyphered!'];
+	print['\n\n'];
+	print['Plaintext = '];
+	print[result];
+	print['\n\n'];
+	
+	S plainTextAnalysis;
+	plainTextAnalysis = analysis[result];
+
+	print['Plaintext Analysis = '];
+	print[plainTextAnalysis]; %String analysis%
+	print['\n\n'];
 }
+else
+{
+	print['bad logic!'];
+};
+
+print['DONE!\n'];
+
 }
