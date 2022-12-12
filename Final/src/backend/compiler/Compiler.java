@@ -202,7 +202,6 @@ public class Compiler extends CKBaseVisitor<Object>
     public Object visitFunctionDefinitionStatement(
             CKParser.FunctionDefinitionStatementContext ctx)
     {
-        programCode.emitFunctionDefinitionStatement(ctx);
         return null;
     }
 

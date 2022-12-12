@@ -50,9 +50,24 @@ public class ProgramGenerator extends CodeGenerator
         emitProgramVariables();
         emitInputScanner();
         emitConstructor();
-        //emitFunction();
+        emitFunction(programSymtab);
         
         emitMainMethod(ctx);
+    }
+
+    /**
+     * Create a new compiler instance for a function.
+     * @param symtab the record type's symbol table.
+     */
+    public void emitFunction(Symtab symtab)
+    {
+        for (SymtabEntry id : symtab.sortedEntries())
+        {
+            if ( (id.getKind() == FUNCTION) )
+            {
+                emitFunctionDefinitionStatement(id);
+            }
+        }
     }
     
     /**
@@ -259,11 +274,10 @@ public class ProgramGenerator extends CodeGenerator
 
     /**
      * Emit code for a declared procedure or function
-     * @param ctx the symbol table entry of the routine's name.
+     * @param routineId the symbol table entry of the routine's name.
      */
-    public void emitFunctionDefinitionStatement(CKParser.FunctionDefinitionStatementContext ctx)
+    public void emitFunctionDefinitionStatement(SymtabEntry routineId)
     {
-        SymtabEntry routineId = ctx.entry;
         Symtab routineSymtab = routineId.getRoutineSymtab();
         emitRoutineHeader(routineId);
         emitRoutineLocals(routineId);
