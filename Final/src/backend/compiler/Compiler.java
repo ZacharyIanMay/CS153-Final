@@ -198,6 +198,14 @@ public class Compiler extends CKBaseVisitor<Object>
         return null;
     }
 
+    @Override
+    public Object visitFunctionDefinitionStatement(
+            CKParser.FunctionDefinitionStatementContext ctx)
+    {
+        programCode.emitFunctionDefinitionStatement(ctx);
+        return null;
+    }
+
     @Override 
     public Object visitNotFactor(CKParser.NotFactorContext ctx)
     {

@@ -50,6 +50,7 @@ public class ProgramGenerator extends CodeGenerator
         emitProgramVariables();
         emitInputScanner();
         emitConstructor();
+        //emitFunction();
         
         emitMainMethod(ctx);
     }
@@ -260,7 +261,7 @@ public class ProgramGenerator extends CodeGenerator
      * Emit code for a declared procedure or function
      * @param ctx the symbol table entry of the routine's name.
      */
-    public void emitRoutine(CKParser.FunctionDefinitionStatementContext ctx)
+    public void emitFunctionDefinitionStatement(CKParser.FunctionDefinitionStatementContext ctx)
     {
         SymtabEntry routineId = ctx.entry;
         Symtab routineSymtab = routineId.getRoutineSymtab();
@@ -272,15 +273,17 @@ public class ProgramGenerator extends CodeGenerator
                                     new StructuredDataGenerator(this, compiler);
         structuredCode.emitData(routineId);
 
+        LocalVariables stored = localVariables;
         localVariables = new LocalVariables(routineSymtab.getMaxSlotNumber());
 
         // Emit code for the compound statement.
-        CKParser.CompoundStatementContext stmtCtx =
-            (CKParser.CompoundStatementContext) routineId.getExecutable();
+        CKParser.StatementContext stmtCtx =
+            (CKParser.StatementContext) routineId.getExecutable();
         compiler.visit(stmtCtx);
 
         emitRoutineReturn(routineId);
         emitRoutineEpilogue();
+        localVariables = stored;
     }
 
     /**

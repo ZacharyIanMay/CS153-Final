@@ -281,6 +281,7 @@ public class Semantics extends CKBaseVisitor<Object>
             
         functionId.setType(returnType);
         functNameCtx.type = returnType;
+        ctx.type = returnType;
         
         // Enter the function's associated variable into its symbol table.
         SymtabEntry assocVarId = 
@@ -290,6 +291,7 @@ public class Semantics extends CKBaseVisitor<Object>
         
         visit(ctx.statement());
         functionId.setExecutable(ctx.statement());
+        ctx.entry = functionId;
         
         symtabStack.pop();
         return null;
