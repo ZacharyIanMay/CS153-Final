@@ -1,7 +1,6 @@
 package backend.compiler;
 
 import antlr4.CKParser;
-
 import intermediate.symtab.*;
 import intermediate.type.*;
 import intermediate.type.Typespec.Form;
@@ -316,7 +315,7 @@ public class ExpressionGenerator extends CodeGenerator
         // Load the scalar value or structure address.
         Typespec variableType = emitLoadVariable(varCtx);
     }
-
+    
     /**
      * Emit code to load a scalar variable's value 
      * or a structured variable's address.
@@ -325,45 +324,13 @@ public class ExpressionGenerator extends CodeGenerator
      */
     public Typespec emitLoadVariable(CKParser.VariableContext varCtx)
     {
-        SymtabEntry variableId = varCtx.variableIdentifier().entry;
+        SymtabEntry variableId = varCtx.entry;
         Typespec variableType = variableId.getType();
-
+        
         // Scalar value or structure address.
         emitLoadValue(variableId);
 
         return variableType;
-    }
-
-    /**
-     * Emit a load of an array element's value.
-     * @param elmtType the element type if character, else null.
-     */
-    private void emitLoadArrayElementValue(Typespec elmtType)
-    {
-        Form form = SCALAR;
-
-        if (elmtType != null) 
-        {
-            elmtType = elmtType.baseType();
-            form = elmtType.getForm();
-        }
-
-        // Load a character from a string.
-        if (elmtType == Predefined.charType) 
-        {
-            emit(INVOKEVIRTUAL, "java/lang/StringBuilder.charAt(I)C");
-        }
-
-        // Load an array element.
-        else 
-        {
-            emit(  elmtType == Predefined.integerType ? IALOAD
-                 : elmtType == Predefined.realType    ? FALOAD
-                 : elmtType == Predefined.booleanType ? BALOAD
-                 : elmtType == Predefined.charType    ? CALOAD
-                 : form == ENUMERATION                ? IALOAD
-                 :                                      AALOAD);
-        }
     }
     
     /**
