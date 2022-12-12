@@ -68,11 +68,11 @@ if[plain == result]
 	print['\n\n'];
 	
 	S plainTextAnalysis;
-    plainTextAnalysis = result @;
+   	plainTextAnalysis = result @;
 
-    print['Plaintext Analysis = '];
-    print[plainTextAnalysis]; %String analysis%
-    print['\n\n'];
+	print['Plaintext Analysis = '];
+	print[plainTextAnalysis]; %String analysis%
+	print['\n\n'];
 }
 else
 {
