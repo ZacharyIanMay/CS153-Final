@@ -4,11 +4,18 @@ public class cypher
     {
         String result = "";
 
-        //TODO: for each letter in the string, shift by the value of the amount
+        //for each letter in the string, shift by the value of the amount
         for(int i = 0; i < plain.length(); i++)
         {
             String temp = plain.substring(i).toLowerCase();
-            result = result + (char)(((temp.toCharArray()[0]+amount-'a')%26)+'a');
+            if (temp.charAt(0) == ' ')   //ignore spaces
+            {
+            	result = result + " ";
+            } 
+            else
+            {
+            	result = result + (char)(((temp.toCharArray()[0]+amount-'a')%26)+'a');
+            }
         }
 
         return result;
@@ -20,7 +27,7 @@ public class cypher
         String plainL = plain.toLowerCase();
         String keyL = key.toLowerCase();
 
-        //TODO: for each letter in the string, shift by the value of the corresponding letter in key
+        //for each letter in the string, shift by the value of the corresponding letter in key
         int l = plain.length();
         for(int i = 0; i < l; i++)
         {
@@ -38,7 +45,7 @@ public class cypher
         String text = cypher.toLowerCase();
         String amounts = "";
 
-        //TODO: search the string for the amounts of each letter
+        //search the string for the amounts of each letter
         for(int i = 0; i < cypher.length(); i++)
         {
             char temp = text.substring(i).toCharArray()[0];
