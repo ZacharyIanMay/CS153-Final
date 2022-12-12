@@ -3,7 +3,7 @@ P sample1[parameters]
 
 F S deshift[I amount, S cyphertext]
 {
-    deshift = cyphertext >> [26 - amount];
+	deshift = cyphertext >> [26 - amount];
 };
 
 print['\nEXECUTING: SAMPLE1\n\n'];
