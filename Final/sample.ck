@@ -1,4 +1,4 @@
-P simple[parameters]
+P sample[parameters]
 {
 
 print['hello\n'];
