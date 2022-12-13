@@ -76,14 +76,14 @@ public class Pascal
             System.out.println("There were no syntax errors.");
         }
         
-     // Pass 2: Function parsing semantic operations.
+        // Pass 2: Function parsing semantic operations.
         System.out.printf("\nPASS 2 Function Semantics:\n");
         FuncSemantics pass2a = new FuncSemantics(mode);
         pass2a.visit(tree);
         
         // Pass 2: Semantic operations.
         System.out.printf("\nPASS 2 Semantics:\n");
-        Semantics pass2 = new Semantics(mode);
+        Semantics pass2 = new Semantics(mode, pass2a.getSymtabStack());
         pass2.visit(tree);
         
         errorCount = pass2.getErrorCount();

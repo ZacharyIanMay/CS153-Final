@@ -40,6 +40,18 @@ public class Semantics extends CKBaseVisitor<Object>
         this.variables = new ArrayList<ArrayList<String>>();
     }
     
+    public Semantics(BackendMode mode, SymtabStack symtabStack)
+    {
+        // Create and initialize the symbol table stack.
+//        this.symtabStack = new SymtabStack();
+    	this.symtabStack = symtabStack;
+        Predefined.initialize(symtabStack);
+        
+        this.mode = mode;
+        this.error = new SemanticErrorHandler();
+        this.variables = new ArrayList<ArrayList<String>>();
+    }
+    
     public SymtabEntry getProgramId() { return programId; }
     public int getErrorCount() { return error.getCount(); };
     

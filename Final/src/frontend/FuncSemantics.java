@@ -40,6 +40,7 @@ public class FuncSemantics extends CKBaseVisitor<Object>
         this.variables = new ArrayList<ArrayList<String>>();
     }
     
+    public SymtabStack getSymtabStack() { return symtabStack; }
     public SymtabEntry getProgramId() { return programId; }
     public int getErrorCount() { return error.getCount(); };
     
