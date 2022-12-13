@@ -88,6 +88,7 @@ if[plain == result]
 else
 {
 	print['bad logic!'];
+	print['\n\n'];
 };
 
 print['DONE!\n'];
