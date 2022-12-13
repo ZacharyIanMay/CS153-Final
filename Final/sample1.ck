@@ -41,7 +41,7 @@ D j;
 j = 1.1;
 
 print['while loop:'];
-print['\n'];
+print['\n\n'];
 while[i < 10]
 {
 	i = i + 1;
@@ -58,7 +58,7 @@ S result;
 result = deshift[2, cypher];
 
 print['if statement:'];
-print['\n'];
+print['\n\n'];
 if[plain == result]
 {
 	print['decyphered!'];
@@ -77,6 +77,7 @@ if[plain == result]
 else
 {
 	print['bad logic!'];
+	print['\n\n'];
 };
 
 print['DONE!\n'];
