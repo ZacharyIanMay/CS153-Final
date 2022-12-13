@@ -233,221 +233,221 @@ public class Semantics extends CKBaseVisitor<Object>
         return null;
     }
     
-    @Override 
-    public Object visitFunctionDefinitionStatement(CKParser.FunctionDefinitionStatementContext ctx) 
-    {
-        CKParser.TypeIdentifierContext typeIdCtx = ctx.typeIdentifier();
-        CKParser.FunctionNameContext functNameCtx = ctx.functionName();
-        CKParser.DefArgumentListContext parameters = ctx.defArgumentList();
-        Typespec returnType = null;
-        String functionName;
-        
-        functionName = functNameCtx.IDENTIFIER().getText().toLowerCase();
-        SymtabEntry functionId = symtabStack.lookupLocal(functionName);
-        
-        if (functionId != null)
-        {
-            error.flag(REDECLARED_IDENTIFIER, 
-                       ctx.getStart().getLine(), functionName);
-            return null;
-        }
-
-        functionId = symtabStack.enterLocal(
-                        functionName, FUNCTION);
-        functionId.setRoutineCode(DECLARED);
-        functNameCtx.entry = functionId;
-        int lineNumber = ctx.getStart().getLine(); 
-        functionId.appendLineNumber(lineNumber);
-        
-        // Append to the parent routine's list of subroutines.
-        SymtabEntry parentId = symtabStack.getLocalSymtab().getOwner();
-        parentId.appendSubroutine(functionId);
-        
-        functionId.setRoutineSymtab(symtabStack.push());
-        functNameCtx.entry = functionId;
-        
-        Symtab symtab = symtabStack.getLocalSymtab();
-        symtab.setOwner(functionId);
-        
-        if (parameters != null)
-        {
-            @SuppressWarnings("unchecked")
-			ArrayList<SymtabEntry> parameterIds = (ArrayList<SymtabEntry>) 
-                                visit(parameters);
-            functionId.setRoutineParameters(parameterIds);
-            
-            for (SymtabEntry parmId : parameterIds)
-            {
-                parmId.setSlotNumber(symtab.nextSlotNumber());
-            }
-        }
-
-        visit(typeIdCtx);
-        returnType = typeIdCtx.type;
-            
-        if (returnType.getForm() != SCALAR)
-        {
-            error.flag(INVALID_RETURN_TYPE, typeIdCtx);
-            returnType = Predefined.integerType;
-        }
-            
-        functionId.setType(returnType);
-        functNameCtx.type = returnType;
-        ctx.type = returnType;
-        
-        // Enter the function's associated variable into its symbol table.
-        SymtabEntry assocVarId = 
-                                symtabStack.enterLocal(functionName, VARIABLE);
-        assocVarId.setSlotNumber(symtab.nextSlotNumber());
-        assocVarId.setType(returnType);
-        
-        visit(ctx.statement());
-        functionId.setExecutable(ctx.statement());
-        ctx.entry = functionId;
-        
-        symtabStack.pop();
-        return null;
-    }
-    
-    @Override 
-    public Object visitDefArgumentList(
-                            CKParser.DefArgumentListContext ctx)
-    {
-        ArrayList<SymtabEntry> parameterList = new ArrayList<>();
-        
-        // Loop over the parameter declarations.
-        for (int i = 0; i < ctx.variable().size(); i++)
-        {
-        	CKParser.VariableContext varCtx = ctx.variable(i);
-            CKParser.TypeIdentifierContext typeCtx = ctx.typeIdentifier(i);
-                
-            visit(typeCtx);
-            Typespec varType = typeCtx.type;
-                
-            int lineNumber = varCtx.getStart().getLine();   
-            String varName = varCtx.variableIdentifier().IDENTIFIER().getText().toLowerCase();
-            SymtabEntry varId = symtabStack.lookupLocal(varName);
-                    
-            if (varId == null)
-            {
-                varId = symtabStack.enterLocal(varName, VALUE_PARAMETER);
-                varId.setType(varType);
-            }
-            else
-            {
-                error.flag(REDECLARED_IDENTIFIER, varCtx);
-            }
-                    
-            varCtx.entry = varId;
-            varCtx.type  = varType;
-                    
-            parameterList.add(varId);
-            varId.appendLineNumber(lineNumber);    
-            }
-        
-        return parameterList;
-    }
-
-    @Override 
-    public Object visitFunctionCallFactor(
-                                    CKParser.FunctionCallFactorContext ctx) 
-    {
-        CKParser.FunctionCallContext callCtx = ctx.functionCall();
-        CKParser.FunctionNameContext nameCtx = callCtx.functionName();
-        CKParser.ArgumentListContext listCtx = callCtx.argumentList();
-        String name = callCtx.functionName().getText().toLowerCase();
-        SymtabEntry functionId = symtabStack.lookup(name);
-        boolean badName = false;
-        
-        ctx.type = Predefined.integerType;
-
-        if (functionId == null)
-        {
-            error.flag(UNDECLARED_IDENTIFIER, nameCtx);
-            badName = true;
-        }
-        else if (functionId.getKind() != FUNCTION)
-        {
-            error.flag(NAME_MUST_BE_FUNCTION, nameCtx);
-            badName = true;
-        }
-        
-        // Bad function name. Do a simple arguments check and then leave.
-        if (badName)
-        {
-            for (CKParser.ArgumentContext exprCtx : listCtx.argument())
-            {
-                visit(exprCtx);
-            }
-        }
-        
-        // Good function name.
-        else
-        {
-            ArrayList<SymtabEntry> parameters = functionId.getRoutineParameters();
-            checkCallArguments(listCtx, parameters);
-            ctx.type = functionId.getType();
-        }
-        
-        nameCtx.entry = functionId;
-        nameCtx.type  = ctx.type;
-
-        return null;
-    }
-    
-    /**
-     * Perform semantic operations on procedure and function call arguments.
-     * @param listCtx the ArgumentListContext.
-     * @param parameters the arraylist of parameters to fill.
-     */
-    private void checkCallArguments(CKParser.ArgumentListContext listCtx,
-                                    ArrayList<SymtabEntry> parameters)
-    {
-        int parmsCount = parameters.size();
-        int argsCount = listCtx != null ? listCtx.argument().size() : 0;
-        
-        if (parmsCount != argsCount)
-        {
-            error.flag(ARGUMENT_COUNT_MISMATCH, listCtx);
-            return;
-        }
-        
-        // Check each argument against the corresponding parameter.
-        for (int i = 0; i < parmsCount; i++)
-        {
-            CKParser.ArgumentContext argCtx = listCtx.argument().get(i);
-            CKParser.ExpressionContext exprCtx = argCtx.expression();
-            visit(exprCtx);
-            
-            SymtabEntry parmId = parameters.get(i);
-            Typespec parmType = parmId.getType();
-            Typespec argType  = exprCtx.type;
-            
-            // For a VAR parameter, the argument must be a variable
-            // with the same datatype.
-            if (parmId.getKind() == REFERENCE_PARAMETER)
-            {
-                if (expressionIsVariable(exprCtx))
-                {
-                    if (parmType != argType)
-                    {
-                        error.flag(TYPE_MISMATCH, exprCtx);
-                    }
-                }
-                else
-                {
-                    error.flag(ARGUMENT_MUST_BE_VARIABLE, exprCtx);
-                }
-            }
-            
-            // For a value parameter, the argument type must be
-            // assignment compatible with the parameter type.
-            else if (!TypeChecker.areAssignmentCompatible(parmType, argType))
-            {
-                error.flag(TYPE_MISMATCH, exprCtx);
-            }
-        }
-    }
+//    @Override 
+//    public Object visitFunctionDefinitionStatement(CKParser.FunctionDefinitionStatementContext ctx) 
+//    {
+//        CKParser.TypeIdentifierContext typeIdCtx = ctx.typeIdentifier();
+//        CKParser.FunctionNameContext functNameCtx = ctx.functionName();
+//        CKParser.DefArgumentListContext parameters = ctx.defArgumentList();
+//        Typespec returnType = null;
+//        String functionName;
+//        
+//        functionName = functNameCtx.IDENTIFIER().getText().toLowerCase();
+//        SymtabEntry functionId = symtabStack.lookupLocal(functionName);
+//        
+//        if (functionId != null)
+//        {
+//            error.flag(REDECLARED_IDENTIFIER, 
+//                       ctx.getStart().getLine(), functionName);
+//            return null;
+//        }
+//
+//        functionId = symtabStack.enterLocal(
+//                        functionName, FUNCTION);
+//        functionId.setRoutineCode(DECLARED);
+//        functNameCtx.entry = functionId;
+//        int lineNumber = ctx.getStart().getLine(); 
+//        functionId.appendLineNumber(lineNumber);
+//        
+//        // Append to the parent routine's list of subroutines.
+//        SymtabEntry parentId = symtabStack.getLocalSymtab().getOwner();
+//        parentId.appendSubroutine(functionId);
+//        
+//        functionId.setRoutineSymtab(symtabStack.push());
+//        functNameCtx.entry = functionId;
+//        
+//        Symtab symtab = symtabStack.getLocalSymtab();
+//        symtab.setOwner(functionId);
+//        
+//        if (parameters != null)
+//        {
+//            @SuppressWarnings("unchecked")
+//			ArrayList<SymtabEntry> parameterIds = (ArrayList<SymtabEntry>) 
+//                                visit(parameters);
+//            functionId.setRoutineParameters(parameterIds);
+//            
+//            for (SymtabEntry parmId : parameterIds)
+//            {
+//                parmId.setSlotNumber(symtab.nextSlotNumber());
+//            }
+//        }
+//
+//        visit(typeIdCtx);
+//        returnType = typeIdCtx.type;
+//            
+//        if (returnType.getForm() != SCALAR)
+//        {
+//            error.flag(INVALID_RETURN_TYPE, typeIdCtx);
+//            returnType = Predefined.integerType;
+//        }
+//            
+//        functionId.setType(returnType);
+//        functNameCtx.type = returnType;
+//        ctx.type = returnType;
+//        
+//        // Enter the function's associated variable into its symbol table.
+//        SymtabEntry assocVarId = 
+//                                symtabStack.enterLocal(functionName, VARIABLE);
+//        assocVarId.setSlotNumber(symtab.nextSlotNumber());
+//        assocVarId.setType(returnType);
+//        
+//        visit(ctx.statement());
+//        functionId.setExecutable(ctx.statement());
+//        ctx.entry = functionId;
+//        
+//        symtabStack.pop();
+//        return null;
+//    }
+//    
+//    @Override 
+//    public Object visitDefArgumentList(
+//                            CKParser.DefArgumentListContext ctx)
+//    {
+//        ArrayList<SymtabEntry> parameterList = new ArrayList<>();
+//        
+//        // Loop over the parameter declarations.
+//        for (int i = 0; i < ctx.variable().size(); i++)
+//        {
+//        	CKParser.VariableContext varCtx = ctx.variable(i);
+//            CKParser.TypeIdentifierContext typeCtx = ctx.typeIdentifier(i);
+//                
+//            visit(typeCtx);
+//            Typespec varType = typeCtx.type;
+//                
+//            int lineNumber = varCtx.getStart().getLine();   
+//            String varName = varCtx.variableIdentifier().IDENTIFIER().getText().toLowerCase();
+//            SymtabEntry varId = symtabStack.lookupLocal(varName);
+//                    
+//            if (varId == null)
+//            {
+//                varId = symtabStack.enterLocal(varName, VALUE_PARAMETER);
+//                varId.setType(varType);
+//            }
+//            else
+//            {
+//                error.flag(REDECLARED_IDENTIFIER, varCtx);
+//            }
+//                    
+//            varCtx.entry = varId;
+//            varCtx.type  = varType;
+//                    
+//            parameterList.add(varId);
+//            varId.appendLineNumber(lineNumber);    
+//            }
+//        
+//        return parameterList;
+//    }
+//
+//    @Override 
+//    public Object visitFunctionCallFactor(
+//                                    CKParser.FunctionCallFactorContext ctx) 
+//    {
+//        CKParser.FunctionCallContext callCtx = ctx.functionCall();
+//        CKParser.FunctionNameContext nameCtx = callCtx.functionName();
+//        CKParser.ArgumentListContext listCtx = callCtx.argumentList();
+//        String name = callCtx.functionName().getText().toLowerCase();
+//        SymtabEntry functionId = symtabStack.lookup(name);
+//        boolean badName = false;
+//        
+//        ctx.type = Predefined.integerType;
+//
+//        if (functionId == null)
+//        {
+//            error.flag(UNDECLARED_IDENTIFIER, nameCtx);
+//            badName = true;
+//        }
+//        else if (functionId.getKind() != FUNCTION)
+//        {
+//            error.flag(NAME_MUST_BE_FUNCTION, nameCtx);
+//            badName = true;
+//        }
+//        
+//        // Bad function name. Do a simple arguments check and then leave.
+//        if (badName)
+//        {
+//            for (CKParser.ArgumentContext exprCtx : listCtx.argument())
+//            {
+//                visit(exprCtx);
+//            }
+//        }
+//        
+//        // Good function name.
+//        else
+//        {
+//            ArrayList<SymtabEntry> parameters = functionId.getRoutineParameters();
+//            checkCallArguments(listCtx, parameters);
+//            ctx.type = functionId.getType();
+//        }
+//        
+//        nameCtx.entry = functionId;
+//        nameCtx.type  = ctx.type;
+//
+//        return null;
+//    }
+//    
+//    /**
+//     * Perform semantic operations on procedure and function call arguments.
+//     * @param listCtx the ArgumentListContext.
+//     * @param parameters the arraylist of parameters to fill.
+//     */
+//    private void checkCallArguments(CKParser.ArgumentListContext listCtx,
+//                                    ArrayList<SymtabEntry> parameters)
+//    {
+//        int parmsCount = parameters.size();
+//        int argsCount = listCtx != null ? listCtx.argument().size() : 0;
+//        
+//        if (parmsCount != argsCount)
+//        {
+//            error.flag(ARGUMENT_COUNT_MISMATCH, listCtx);
+//            return;
+//        }
+//        
+//        // Check each argument against the corresponding parameter.
+//        for (int i = 0; i < parmsCount; i++)
+//        {
+//            CKParser.ArgumentContext argCtx = listCtx.argument().get(i);
+//            CKParser.ExpressionContext exprCtx = argCtx.expression();
+//            visit(exprCtx);
+//            
+//            SymtabEntry parmId = parameters.get(i);
+//            Typespec parmType = parmId.getType();
+//            Typespec argType  = exprCtx.type;
+//            
+//            // For a VAR parameter, the argument must be a variable
+//            // with the same datatype.
+//            if (parmId.getKind() == REFERENCE_PARAMETER)
+//            {
+//                if (expressionIsVariable(exprCtx))
+//                {
+//                    if (parmType != argType)
+//                    {
+//                        error.flag(TYPE_MISMATCH, exprCtx);
+//                    }
+//                }
+//                else
+//                {
+//                    error.flag(ARGUMENT_MUST_BE_VARIABLE, exprCtx);
+//                }
+//            }
+//            
+//            // For a value parameter, the argument type must be
+//            // assignment compatible with the parameter type.
+//            else if (!TypeChecker.areAssignmentCompatible(parmType, argType))
+//            {
+//                error.flag(TYPE_MISMATCH, exprCtx);
+//            }
+//        }
+//    }
 
     /**
      * Determine whether or not an expression is a variable only.
